@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>هفته‌های به‌جا نرفتهٔ من</title>
+<style>
+  :root{
+    --bg1:#0f172a; --bg2:#1e293b; --text:#e5e7eb; --muted:#93a5b1;
+    --cell:14px; --gap:4px; --cols:52; --rows:1;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family: Vazirmatn, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    color:var(--text);
+    background: radial-gradient(1200px 800px at 80% -20%, #1f2937 0%, var(--bg1) 60%),
+               linear-gradient(180deg, var(--bg1), var(--bg2));
+  }
+  .container{max-width:1100px; margin:auto; padding:16px}
+  .card{
+    background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+    border:1px solid rgba(255,255,255,0.08); border-radius:18px; padding:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.2)
+  }
+  h1{margin:8px 0 12px; font-weight:800; font-size:clamp(18px, 3.8vw, 28px)}
+  .subtitle{color:var(--muted); font-size:clamp(12px, 2.9vw, 14px)}
+
+  form{display:grid; grid-template-columns:repeat(5, 1fr); gap:10px; margin-top:14px}
+  .field{display:flex; flex-direction:column; gap:6px}
+  label{font-size:12px; color:var(--muted)}
+  input,select,button{
+    background:#0a1221; border:1px solid rgba(255,255,255,0.1); color:var(--text);
+    padding:10px 12px; border-radius:10px; font-size:14px
+  }
+  button{cursor:pointer; background:linear-gradient(90deg, #22d3ee, #38bdf8); color:#00111a; font-weight:700}
+
+  .legend{display:flex; gap:12px; flex-wrap:wrap; margin:12px 0 4px}
+  .legend-item{display:inline-flex; align-items:center; gap:8px; padding:6px 10px;
+    border-radius:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); font-size:12px}
+  .legend-item.pre{background:rgba(245,158,11,.12)}
+  .legend-item.post{background:rgba(239,68,68,.12)}
+  .legend-item.future{background:rgba(51,65,85,.4)}
+
+  .stats{display:flex; gap:8px; flex-wrap:wrap; margin-top:4px}
+  .stat{background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:8px 10px; font-size:12px}
+
+  .grid-wrap{margin-top:12px; border-radius:12px; background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02)); padding:8px}
+
+  /* The grid */
+  .weeks{
+    --grid-h: calc(var(--rows)*var(--cell) + (var(--rows) - 1)*var(--gap));
+    display:grid; grid-template-columns:repeat(var(--cols), var(--cell));
+    grid-auto-rows: var(--cell); gap:var(--gap);
+    width:fit-content; height:var(--grid-h); /* hard cap so stripes stop with cells */
+    border-radius:12px;
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        rgba(148,163,184,0.10) 0,
+        rgba(148,163,184,0.10) var(--cell),
+        transparent var(--cell),
+        transparent calc(var(--cell) + var(--gap))
+      );
+    background-origin:content-box; background-clip:content-box;
+    padding:0; overflow:hidden;
+  }
+  .week{width:var(--cell); height:var(--cell); border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:9px}
+  .week.pre{background:rgba(245,158,11,.15)}
+  .week.post{background:rgba(239,68,68,.15)}
+  .week.future{background:rgba(71,85,105,.5)}
+  .week.pre::after{content:"☀️"}
+  .week.post::after{content:"💩"}
+
+  #notes{margin-top:12px; color:#cbd5e1; font-size:12px; line-height:1.6}
+  #plus5{margin-top:8px; color:#fbbf24; font-size:12px}
+  #finalMsg{margin-top:10px; color:#fca5a5; font-size:13px}
+
+  @media (max-width: 720px){
+    form{grid-template-columns:repeat(2, 1fr)}
+    :root{ --gap:3px }
+  }
+
+  /* PRINT */
+  @page { size: A4 portrait; margin: 12mm; }
+  @media print{
+    html, body { background:#fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .container { max-width:none; padding:0 }
+    .card { box-shadow:none !important; border:none; border-radius:0 }
+    :root { --cell: 10px; --gap: 2px; }
+    .weeks{
+      --grid-h: calc(var(--rows)*var(--cell) + (var(--rows) - 1)*var(--gap));
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(148,163,184,0.12) 0,
+          rgba(148,163,184,0.12) var(--cell),
+          transparent var(--cell),
+          transparent calc(var(--cell) + var(--gap))
+        );
+      background-origin:content-box; background-clip:content-box;
+      height:var(--grid-h); /* ensures stripes end with cells */
+    }
+    .week.pre   { background: rgba(201,138,0,0.30) !important; }
+    .week.post  { background: rgba(176, 0, 32, 0.30) !important; }
+    .week.future{ background: rgba(156, 163, 175, 0.253) !important; }
+    form, .legend, #error, #printBtn { display:none !important; }
+    h1 { margin-bottom:6mm; color:#000 }
+    .subtitle, .stats, #notes, #plus5, #finalMsg { color:#000 !important }
+    .grid-wrap { background:none; padding:0 }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <h1>هفته‌های به‌جا نرفتهٔ من</h1>
+    <div class="subtitle">میانگین عمر ایرانی‌ها: <span id="avgLabel">۷۷٫۷</span> سال (قابل تغییر). پیش از مرز ۱۲ بهمن ۱۳۵۷ با ☀️، پس از آن با 💩.</div>
+
+    <form id="birth-form" onsubmit="return false;">
+      <div class="field"><label>سال</label><input id="jy" type="text" inputmode="numeric" placeholder="۱۳۷۰" required></div>
+      <div class="field"><label>ماه</label>
+        <select id="jm" required>
+          <option></option><option value="1">فروردین</option><option value="2">اردیبهشت</option><option value="3">خرداد</option>
+          <option value="4">تیر</option><option value="5">مرداد</option><option value="6">شهریور</option>
+          <option value="7">مهر</option><option value="8">آبان</option><option value="9">آذر</option>
+          <option value="10">دی</option><option value="11">بهمن</option><option value="12">اسفند</option>
+        </select>
+      </div>
+      <div class="field"><label>روز</label><input id="jd" type="text" inputmode="numeric" placeholder="۱" required></div>
+      <div class="field"><label>میانگین</label><input id="avg" type="text" inputmode="decimal" placeholder="77.7" value="77.7"></div>
+      <div class="field" style="align-self:end"><button id="calc" type="button">محاسبه</button></div>
+      <div id="error" class="error" hidden>تاریخ نامعتبر است.</div>
+    </form>
+
+    <div class="legend">
+      <span class="legend-item pre">☀️ پیش از مرز</span>
+      <span class="legend-item post">💩 پس از مرز</span>
+      <span class="legend-item future">▫️ باقی‌مانده</span>
+    </div>
+
+    <div class="stats" id="stats" hidden>
+      <div class="stat" id="ageStat"></div>
+      <div class="stat" id="avgStat"></div>
+      <div class="stat" id="preStat"></div>
+      <div class="stat" id="postStat"></div>
+      <div class="stat" id="leftStat"></div>
+    </div>
+
+    <div class="grid-wrap">
+      <div class="weeks" id="weeks" aria-live="polite"></div>
+      <div id="notes"></div>
+      <div id="plus5" hidden></div>
+      <div id="finalMsg"></div>
+      <div style="margin-top:14px; display:flex; gap:8px; justify-content:flex-start">
+        <button id="printBtn" type="button" hidden
+          style="background:#e2e8f0;color:#0f172a;border:none;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer">
+          پرینت A4
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Jalali conversion lib -->
+<script src="https://cdn.jsdelivr.net/npm/jalaali-js@1.2.3/dist/jalaali.min.js"></script>
+<script>
+  // --- Constants & helpers ---
+  const WEEK_MS = 7*24*60*60*1000;
+  const CUTOFF = new Date(Date.UTC(1979,1,1)); // 1979-02-01 (12 Bahman 1357)
+  const digitMap = { '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9', '٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9' };
+  const norm = s => String(s||'').replace(/[۰-۹٠-٩]/g, d=>digitMap[d]||d).trim();
+  const weeksBetween = (a,b) => Math.max(0, Math.floor((b-a)/WEEK_MS));
+  const isValidJalali = (jy,jm,jd) => {
+    try { return jalaali.isValidJalaaliDate(jy,jm,jd); } catch { return false; }
+  };
+
+  function setRowsCSS(totalWeeks){
+    const cols = 52;
+    const rows = Math.max(1, Math.ceil(totalWeeks / cols));
+    const el = document.getElementById('weeks');
+    el.style.setProperty('--rows', rows);
+    el.style.setProperty('--cols', cols);
+  }
+
+  function render(jy, jm, jd, avg){
+    const err = document.getElementById('error'); err.hidden = true; err.textContent = '';
+    if(!isValidJalali(jy,jm,jd)){ err.hidden=false; err.textContent='تاریخ جلالی معتبر نیست.'; return; }
+
+    const g = jalaali.toGregorian(jy,jm,jd);
+    const birth = new Date(Date.UTC(g.gy, g.gm-1, g.gd));
+    const now = new Date();
+    const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+
+    const lived = weeksBetween(birth, today);
+    const preCut = (birth < CUTOFF) ? weeksBetween(birth, Math.min(CUTOFF, today)) : 0;
+    const postCut = Math.max(0, lived - preCut);
+
+    const avgYears = (parseFloat(avg)>0) ? parseFloat(avg) : 77.7;
+    const ageYears = (today - birth) / (365.2425*24*3600*1000);
+    const surpass = ageYears - avgYears;
+    let horizonYears = avgYears;
+    let avgNote = '';
+    if (surpass > 0){
+      horizonYears = ageYears + 5;
+      avgNote = `شما هم‌اکنون ${surpass.toFixed(1)} سال از میانگین ایرانی‌ها جلوتر هستید؛ افق روی «سن فعلی + ۵ سال» تنظیم شد.`;
+    }
+    const total = Math.floor(horizonYears * 52);
+    const left = Math.max(0, total - Math.min(lived, total));
+
+    // Fix stripes end: set exact row count on CSS var and fixed height
+    setRowsCSS(total);
+
+    // Render cells
+    const weeksEl = document.getElementById('weeks');
+    weeksEl.innerHTML = '';
+    const frag = document.createDocumentFragment();
+    for(let i=0;i<total;i++){
+      const t = new Date(birth.getTime() + i*WEEK_MS);
+      const cell = document.createElement('div');
+      cell.className = 'week future';
+      if(i < lived){ cell.className = (t < CUTOFF) ? 'week pre' : 'week post'; }
+      const j = jalaali.toJalaali(new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate())));
+      cell.title = `هفته ${i+1} — ${j.jy}/${String(j.jm).padStart(2,'0')}/${String(j.jd).padStart(2,'0')}`;
+      frag.appendChild(cell);
+    }
+    weeksEl.appendChild(frag);
+
+    // Stats & notes
+    document.getElementById('stats').hidden = false;
+    document.getElementById('ageStat').textContent = `سن: ${ageYears.toFixed(1)} سال`;
+    document.getElementById('avgStat').textContent = avgNote || `میانگین مبنا: ${avgYears.toFixed(1)} سال`;
+    document.getElementById('preStat').textContent = `پیش از مرز: ${preCut} هفته`;
+    document.getElementById('postStat').textContent = `پس از مرز: ${postCut} هفته`;
+    document.getElementById('leftStat').textContent = `باقی‌مانده: ${left} هفته`;
+
+    document.getElementById('notes').textContent = [
+      `تاریخ مرز ☀️→💩: ۱۲ بهمن ۱۳۵۷ / 1979-02-01`,
+      `سن شما: ${ageYears.toFixed(1)} سال`,
+      `افق نمایش (سال): ${horizonYears.toFixed(1)} (≈ ${total} هفته)`,
+      `هفته‌های طی‌شده: ${lived} — پیش از مرز: ${preCut} — پس از مرز: ${postCut}`,
+      `هفته‌های باقی‌مانده: ${left}`
+    ].join(' | ');
+
+    const plus5 = document.getElementById('plus5');
+    if (surpass>0){ plus5.hidden = false; plus5.textContent = `شما ${surpass.toFixed(1)} سال از میانگین ایرانی‌ها جلوتر هستید؛ افق روی «سن فعلی + ۵ سال» تنظیم شد.`; }
+    else { plus5.hidden = true; plus5.textContent = ''; }
+
+    document.getElementById('finalMsg').textContent = 'هفته‌هایت زیر جمهوری اسلامی در حال تمام شدن‌اند — هر هفته مهم است. زمان را پس نمی‌دهند.';
+
+    // Print button only after calculation
+    document.getElementById('printBtn').hidden = false;
+  }
+
+  // Events
+  document.getElementById('calc').addEventListener('click', () => {
+    const jy = parseInt(norm(document.getElementById('jy').value),10);
+    const jm = parseInt(document.getElementById('jm').value,10);
+    const jd = parseInt(norm(document.getElementById('jd').value),10);
+    const avg = norm(document.getElementById('avg').value);
+    render(jy, jm, jd, avg);
+  });
+  document.getElementById('printBtn').addEventListener('click', () => window.print());
+
+  // Defaults for quick test
+  window.addEventListener('DOMContentLoaded', ()=>{
+    if(!jy.value) jy.value='1370'; if(!jm.value) jm.value='1'; if(!jd.value) jd.value='1';
+  });
+</script>
+</body>
+</html>
