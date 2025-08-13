@@ -75,10 +75,25 @@
   #plus5{margin-top:8px; color:#fbbf24; font-size:12px}
   #finalMsg{margin-top:10px; color:#fca5a5; font-size:13px}
 
-  @media (max-width: 720px){
-    form{grid-template-columns:repeat(2, 1fr)}
-    :root{ --gap:3px }
-  }
+  /* Make the grid wrapper scroll horizontally if it still can’t fit */
+.grid-wrap{ overflow-x:auto }
+
+/* Tighter layout on small phones */
+@media (max-width: 720px){
+  :root{ --gap:3px }  /* smaller gap so more fits */
+}
+
+/* Tighter layout on small phones */
+@media (max-width: 480px){
+  .container{ padding:12px }
+  .card{ padding:12px; border-radius:14px }
+  form{ grid-template-columns: 1fr } /* 1 column form on narrow screens */
+  h1{ font-size:clamp(16px, 5.5vw, 22px) }
+  .subtitle{ font-size:clamp(11px, 3.5vw, 13px) }
+  .legend-item{ font-size:11px; padding:5px 8px }
+  .stat{ font-size:11px; padding:6px 8px }
+}
+
 
   /* PRINT */
   @page { size: A4 portrait; margin: 12mm; }
@@ -265,6 +280,37 @@
   window.addEventListener('DOMContentLoaded', ()=>{
     if(!jy.value) jy.value='1370'; if(!jm.value) jm.value='1'; if(!jd.value) jd.value='1';
   });
+   function fitGridToViewport(){
+    // wrapper that limits available width (scroll container)
+    const wrap = document.querySelector('.grid-wrap');
+    if(!wrap) return;
+
+    const styles = getComputedStyle(document.documentElement);
+    const gap = parseFloat(styles.getPropertyValue('--gap')) || 3;
+    const cols = 52;
+
+    // available inner width (minus a tiny safety margin)
+    const w = wrap.clientWidth - 2;
+
+    // compute cell size so all 52 columns + gaps fit
+    const cell = Math.floor((w - (cols - 1) * gap) / cols);
+
+    // clamp for usability (8–16px works well; raise min if you want bigger taps)
+    const clamped = Math.max(8, Math.min(16, cell || 12));
+
+    document.documentElement.style.setProperty('--cell', clamped + 'px');
+  }
+
+  // Recalculate on load, resize, and after we render the grid
+  window.addEventListener('DOMContentLoaded', fitGridToViewport);
+  window.addEventListener('resize', fitGridToViewport);
+
+  // Hook your existing render to refit after building cells
+  const _render = render;
+  render = function(jy, jm, jd, avg){
+    _render(jy, jm, jd, avg);
+    fitGridToViewport();
+  };
 </script>
 </body>
 </html>
