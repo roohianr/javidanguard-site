@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import * as h3 from 'h3-js';
 
 const BUCKET_MID = [1, 3, 8, 15, 25];
-const K = 20;
+const K = 1;
 const NOISE = 1;
 
 export default async function handler(req, res) {
