@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import * as h3 from 'h3-js';
 
 const BUCKET_MID = [1, 3, 8, 15, 25];
-const DEFAULT_K = 10;
+const DEFAULT_K = 2;
 const K = Math.max(1, Number(process.env.K_THRESHOLD || DEFAULT_K));
 
 const NOISE = 1;
