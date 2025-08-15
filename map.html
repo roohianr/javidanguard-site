@@ -8,14 +8,18 @@
   <style>
     html, body { height: 100%; margin: 0; }
     #map { height: 100%; width: 100%; }
-    .ui { position: absolute; top: 12px; right: 12px; z-index: 10; display: grid; gap: 8px; }
-    .card { background: rgba(0,0,0,.6); color: #fff; backdrop-filter: blur(6px); border-radius: 10px; padding: 10px 12px; }
-    .row { display: flex; gap: 6px; align-items: center; }
+
+    /* UI floating cards (don’t block map drags outside the cards) */
+    .ui { position: absolute; top: 12px; right: 12px; z-index: 10; display: grid; gap: 8px; pointer-events: none; }
+    .card { pointer-events: auto; background: rgba(0,0,0,.6); color: #fff; backdrop-filter: blur(6px); border-radius: 10px; padding: 10px 12px; min-width: 280px; }
+    .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
     input, select, button { font: inherit; }
-    input[type="text"] { width: 240px; padding: 6px 8px; border-radius: 8px; border: 1px solid #444; background:#111; color:#fff; }
+    input[type="text"] { flex: 1 1 160px; min-width: 0; padding: 6px 8px; border-radius: 8px; border: 1px solid #444; background:#111; color:#fff; }
     button { padding: 6px 10px; border-radius: 8px; border: 1px solid #444; background:#1a1a1a; color:#fff; cursor: pointer; }
     button:hover { background:#222; }
-    .hint { font-size: 12px; opacity:.85; line-height: 1.4; }
+    select { padding: 6px 8px; border-radius: 8px; border: 1px solid #444; background:#111; color:#fff; }
+    .hint { font-size: 12px; opacity:.85; line-height: 1.5; margin-top: 6px; }
+    .pill { font-size: 12px; opacity:.9; background:#111; border:1px solid #444; border-radius:999px; padding:2px 8px; }
   </style>
 </head>
 <body>
@@ -25,13 +29,18 @@
   <div class="ui">
     <div class="card">
       <div class="row">
-        <input id="search" placeholder="جستجو شهر (Tehran, Shiraz…)" />
+        <input id="search" placeholder="جستجوی شهر/منطقه (تهران ۶، شیراز…)" />
         <button id="goto">برو</button>
       </div>
-      <div class="hint">برای اعلام گروه‌تان، نقشه را روی محله‌تان ببرید، سپس دکمه زیر را بزنید.</div>
+      <div class="hint">برای اعلام گروه‌تان، نقشه را روی <b>محله‌تان</b> ببرید، سپس دکمه زیر را بزنید.</div>
     </div>
+
     <div class="card">
       <div class="row">
+        <span class="pill" id="zoomLabel">زوم: —</span>
+        <span class="pill" id="cellLabel">سلول: —</span>
+      </div>
+      <div class="row" style="margin-top:8px">
         <label>ما چند نفر هستیم:</label>
         <select id="bucket">
           <option value="0">۱</option>
@@ -40,10 +49,9 @@
           <option value="3">۱۱–۲۰</option>
           <option value="4">۲۰+</option>
         </select>
-        <div class="hint" id="where">محدوده انتخاب‌شده: زوم کنید روی محله دقیق‌تان.</div>
         <button id="add">افزودن گروه</button>
       </div>
-      <div class="hint">اطلاعات شما به صورت ناشناس و در قالب «سلول‌های شش‌ضلعی» ذخیره می‌شود. نقطهٔ دقیق ثبت نمی‌شود.</div>
+      <div class="hint">اطلاعات به صورت ناشناس و در قالب «سلول‌های شش‌ضلعی» ذخیره می‌شود. نقطهٔ دقیق ثبت نمی‌شود.</div>
     </div>
   </div>
 
@@ -53,7 +61,10 @@
   <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
 
   <script>
-    // --- tiny Iran city list (you can expand later) ---
+    // Support both window.h3 (v4 UMD) and older window.h3core names
+    const H3 = window.h3 || window.h3core;
+
+    // --- Cities + Tehran districts (expand later as needed) ---
     const IR_CITIES = [
       {n:'Tehran', fa:'تهران', lat:35.6892, lng:51.3890},
       {n:'Mashhad', fa:'مشهد', lat:36.2605, lng:59.6168},
@@ -66,94 +77,142 @@
       {n:'Kermanshah', fa:'کرمانشاه', lat:34.3142, lng:47.0650},
       {n:'Urmia', fa:'ارومیه', lat:37.5517, lng:45.0760}
     ];
-    const fuse = new Fuse(IR_CITIES, { keys: ['n', 'fa'], threshold: 0.3 });
+    const TEH_DISTRICTS = [
+      {n:'Tehran - District 1', fa:'تهران - منطقه ۱',  lat:35.804, lng:51.407},
+      {n:'Tehran - District 2', fa:'تهران - منطقه ۲',  lat:35.746, lng:51.344},
+      {n:'Tehran - District 3', fa:'تهران - منطقه ۳',  lat:35.763, lng:51.418},
+      {n:'Tehran - District 4', fa:'تهران - منطقه ۴',  lat:35.760, lng:51.518},
+      {n:'Tehran - District 5', fa:'تهران - منطقه ۵',  lat:35.748, lng:51.241},
+      {n:'Tehran - District 6', fa:'تهران - منطقه ۶',  lat:35.717, lng:51.409},
+      {n:'Tehran - District 7', fa:'تهران - منطقه ۷',  lat:35.724, lng:51.450},
+      {n:'Tehran - District 8', fa:'تهران - منطقه ۸',  lat:35.727, lng:51.505},
+      {n:'Tehran - District 9', fa:'تهران - منطقه ۹',  lat:35.693, lng:51.286},
+      {n:'Tehran - District 10',fa:'تهران - منطقه ۱۰', lat:35.680, lng:51.374},
+      {n:'Tehran - District 11',fa:'تهران - منطقه ۱۱', lat:35.667, lng:51.388},
+      {n:'Tehran - District 12',fa:'تهران - منطقه ۱۲', lat:35.673, lng:51.435},
+      {n:'Tehran - District 13',fa:'تهران - منطقه ۱۳', lat:35.707, lng:51.485},
+      {n:'Tehran - District 14',fa:'تهران - منطقه ۱۴', lat:35.666, lng:51.474},
+      {n:'Tehran - District 15',fa:'تهران - منطقه ۱۵', lat:35.635, lng:51.491},
+      {n:'Tehran - District 16',fa:'تهران - منطقه ۱۶', lat:35.634, lng:51.415},
+      {n:'Tehran - District 17',fa:'تهران - منطقه ۱۷', lat:35.651, lng:51.349},
+      {n:'Tehran - District 18',fa:'تهران - منطقه ۱۸', lat:35.645, lng:51.269},
+      {n:'Tehran - District 19',fa:'تهران - منطقه ۱۹', lat:35.615, lng:51.357},
+      {n:'Tehran - District 20',fa:'تهران - منطقه ۲۰', lat:35.561, lng:51.440},
+      {n:'Tehran - District 21',fa:'تهران - منطقه ۲۱', lat:35.693, lng:51.185},
+      {n:'Tehran - District 22',fa:'تهران - منطقه ۲۲', lat:35.742, lng:51.201}
+    ];
+    const fuse = new Fuse([...IR_CITIES, ...TEH_DISTRICTS], { keys: ['n','fa'], threshold: 0.3 });
 
-    // --- map ---
+    // --- Map init (raster tiles for now; swap to vector later) ---
     const map = new maplibregl.Map({
       container: 'map',
-      // Dev raster tiles; we’ll swap to self-hosted vector tiles later.
       style: {
         version: 8,
         sources: {
-          osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256,
-            attribution:'© OpenStreetMap' }
+          osm: {
+            type: 'raster',
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '© OpenStreetMap contributors'
+          }
         },
         layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
       },
       center: [54, 32],
-      zoom: 4.5, minZoom:3, maxZoom:16
+      zoom: 4.5,
+      minZoom: 3,
+      maxZoom: 16
     });
     map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
-    // Hex source/layers (aggregates from API)
+    // --- Sources & layers ---
     map.on('load', () => {
-  // aggregates layer
-  map.addSource('cells', { type: 'geojson', data: { type:'FeatureCollection', features: [] } });
-  map.addLayer({
-    id: 'cells-fill', type: 'fill', source: 'cells',
-    paint: {
-      'fill-color': ['interpolate',['linear'],['get','count'],0,'#0000',20,'#3b82f6',50,'#22c55e',100,'#eab308',200,'#ef4444'],
-      'fill-opacity': 0.45
+      // Aggregated cells from API
+      map.addSource('cells', { type: 'geojson', data: emptyFC() });
+      map.addLayer({
+        id: 'cells-fill', type: 'fill', source: 'cells',
+        paint: {
+          'fill-color': [
+            'interpolate', ['linear'], ['get', 'count'],
+            0,  '#00000000',
+            20, '#3b82f6',
+            50, '#22c55e',
+            100, '#eab308',
+            200, '#ef4444'
+          ],
+          'fill-opacity': 0.45
+        }
+      });
+      map.addLayer({
+        id:'cells-outline', type:'line', source:'cells',
+        paint:{ 'line-color':'#ffffff', 'line-width':0.6, 'line-opacity':0.5 }
+      });
+
+      // Selected hex preview at map center
+      map.addSource('selected', { type:'geojson', data: emptyFC() });
+      map.addLayer({ id:'selected-fill', type:'fill', source:'selected',
+        paint:{ 'fill-color':'#ffffff', 'fill-opacity':0.12 }});
+      map.addLayer({ id:'selected-line', type:'line', source:'selected',
+        paint:{ 'line-color':'#ffffff', 'line-width':1.2 }});
+
+      refreshAgg();
+      updateSelected();
+    });
+
+    // Keep UI + preview in sync
+    let refreshTimer;
+    map.on('move', () => updateSelected());
+    map.on('moveend', () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(refreshAgg, 250); });
+
+    function emptyFC(){ return { type:'FeatureCollection', features: [] }; }
+
+    function updateSelected(){
+      const c = map.getCenter();
+      const cell = H3.latLngToCell(c.lat, c.lng, 8);
+      const boundary = H3.cellToBoundary(cell, true).map(([lat,lng])=>[lng,lat]);
+      const gj = {
+        type:'FeatureCollection',
+        features:[{ type:'Feature', properties:{ cell },
+          geometry:{ type:'Polygon', coordinates:[[...boundary, boundary[0]]] } }]
+      };
+      const src = map.getSource('selected');
+      if (src) src.setData(gj);
+
+      document.getElementById('zoomLabel').textContent = `زوم: ${map.getZoom().toFixed(1)}`;
+      document.getElementById('cellLabel').textContent = `سلول: ${cell}`;
     }
-  });
-  map.addLayer({ id:'cells-outline', type:'line', source:'cells',
-    paint:{'line-color':'#fff','line-width':0.6,'line-opacity':0.5}
-  });
-
-  // selected hex preview
-  map.addSource('selected', { type:'geojson', data:{ type:'FeatureCollection', features:[] } });
-  map.addLayer({ id:'selected-fill', type:'fill', source:'selected',
-    paint:{ 'fill-color':'#ffffff', 'fill-opacity':0.12 }});
-  map.addLayer({ id:'selected-line', type:'line', source:'selected',
-    paint:{ 'line-color':'#ffffff', 'line-width':1.2 }});
-
-  refreshAgg();
-  updateSelected();
-});
-
-function updateSelected(){
-  const c = map.getCenter();
-  const cell = h3core.latLngToCell(c.lat, c.lng, 8);
-  const boundary = h3core.cellToBoundary(cell, true).map(([lat,lng])=>[lng,lat]);
-  const gj = { type:'FeatureCollection', features:[{
-    type:'Feature', properties:{ cell }, geometry:{ type:'Polygon', coordinates:[[...boundary, boundary[0]]] }
-  }]};
-  map.getSource('selected')?.setData(gj);
-
-  const z = map.getZoom().toFixed(1);
-  document.getElementById('where').textContent =
-    `محدوده انتخاب‌شده (شش‌ضلعی محله): ${cell} — زوم فعلی: ${z}`;
-}
-
-// keep both previews in sync
-let refreshTimer;
-map.on('move', () => updateSelected());
-map.on('moveend', () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(refreshAgg, 250); });
-
 
     async function refreshAgg(){
       const b = map.getBounds();
       const z = map.getZoom();
       const url = `/api/agg?bbox=${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}&z=${z.toFixed(1)}`;
       try {
-        const gj = await fetch(url, { cache:'no-store' }).then(r=>r.json());
-        const src = map.getSource('cells');
-        if (src) src.setData(gj);
-      } catch(e){ console.warn('agg fetch failed', e); }
+        const r = await fetch(url, { cache:'no-store' });
+        if (!r.ok) throw new Error(`${r.status}`);
+        const gj = await r.json();
+        map.getSource('cells')?.setData(gj);
+      } catch(e){
+        // Silent in UI; log to console for debugging
+        console.warn('agg fetch failed:', e);
+      }
     }
 
     // --- Search ---
-    document.getElementById('goto').onclick = () => {
-      const q = (document.getElementById('search').value || '').trim();
+    const searchEl = document.getElementById('search');
+    document.getElementById('goto').onclick = gotoSearch;
+    searchEl.addEventListener('keydown', (e)=>{ if(e.key==='Enter') gotoSearch(); });
+
+    function gotoSearch(){
+      const q = (searchEl.value || '').trim();
       if (!q) return;
       const res = fuse.search(q, { limit: 1 });
       if (res.length) {
         const { lat, lng } = res[0].item;
-        map.easeTo({ center:[lng, lat], zoom: 10 });
+        map.easeTo({ center:[lng, lat], zoom: 12 });
       }
-    };
+    }
 
-    // --- Anonymous device token (local only; we send a one-way hash) ---
+    // --- Anonymous device token (we hash before sending) ---
     async function getHashedDevice(){
       let id = localStorage.getItem('deviceId');
       if (!id) {
@@ -167,31 +226,34 @@ map.on('moveend', () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(
     }
 
     // --- Submit group (bucket) for current map center ---
- document.getElementById('add').onclick = async () => {
-  if (map.getZoom() < 12) {
-    alert('لطفاً بیشتر بزرگنمایی کنید (حداقل زوم ۱۲) و مرکز نقشه را روی محله‌تان قرار دهید.');
-    return;
-  }
-  const bucket = +document.getElementById('bucket').value;
-  const c = map.getCenter();
-  const h3 = h3core.latLngToCell(c.lat, c.lng, 8);
-  const hashedDevice = await getHashedDevice();
-  try {
-    const res = await fetch('/api/submit', {
-      method: 'POST', headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ h3, bucket, hashedDevice })
-    });
-    const text = await res.text();
-    let json; try { json = JSON.parse(text) } catch {}
-    if (res.ok) {
-      alert('ثبت شد. به‌دلیل محرمانگی ممکن است تا رسیدن همسایه‌ها در نقشه دیده نشود.');
-      refreshAgg();
-    } else {
-      alert(`خطا (${res.status}): ${json?.message || text.slice(0,140)}`);
-    }
-  } catch(e){ alert('ارتباط با سرور برقرار نشد.'); }
-};
+    document.getElementById('add').onclick = async () => {
+      if (map.getZoom() < 12) {
+        alert('لطفاً بیشتر بزرگنمایی کنید (حداقل زوم ۱۲) و مرکز نقشه را روی محله‌تان قرار دهید.');
+        return;
+      }
+      const bucket = +document.getElementById('bucket').value; // 0..4
+      const c = map.getCenter();
+      const h3 = H3.latLngToCell(c.lat, c.lng, 8);
+      const hashedDevice = await getHashedDevice();
 
+      try {
+        const res = await fetch('/api/submit', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify({ h3, bucket, hashedDevice })
+        });
+        const txt = await res.text();
+        let json; try { json = JSON.parse(txt) } catch(e){}
+        if (res.ok) {
+          alert('ثبت شد. به‌دلیل محرمانگی ممکن است تا رسیدن همسایه‌ها در نقشه دیده نشود.');
+          refreshAgg();
+        } else {
+          alert(`خطا (${res.status}): ${json?.message || txt.slice(0,140)}`);
+        }
+      } catch(e){
+        alert('ارتباط با سرور برقرار نشد.');
+      }
+    };
   </script>
 </body>
 </html>
