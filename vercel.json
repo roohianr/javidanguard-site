@@ -1,5 +1,6 @@
 {
+  "version": 2,
   "rewrites": [
-    { "source": "/map", "destination": "/map.html" }
-  ],
+    { "source": "/map", "destination": "/map/index.html" }
+  ]
 }
