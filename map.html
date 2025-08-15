@@ -8,36 +8,162 @@
   <style>
     html, body { height: 100%; margin: 0; }
     #map { height: 100%; width: 100%; }
+    .ui { position: absolute; top: 12px; right: 12px; z-index: 10; display: grid; gap: 8px; }
+    .card { background: rgba(0,0,0,.6); color: #fff; backdrop-filter: blur(6px); border-radius: 10px; padding: 10px 12px; }
+    .row { display: flex; gap: 6px; align-items: center; }
+    input, select, button { font: inherit; }
+    input[type="text"] { width: 240px; padding: 6px 8px; border-radius: 8px; border: 1px solid #444; background:#111; color:#fff; }
+    button { padding: 6px 10px; border-radius: 8px; border: 1px solid #444; background:#1a1a1a; color:#fff; cursor: pointer; }
+    button:hover { background:#222; }
+    .hint { font-size: 12px; opacity:.85; line-height: 1.4; }
   </style>
 </head>
 <body>
   <div id="map"></div>
 
+  <!-- UI -->
+  <div class="ui">
+    <div class="card">
+      <div class="row">
+        <input id="search" placeholder="جستجو شهر (Tehran, Shiraz…)" />
+        <button id="goto">برو</button>
+      </div>
+      <div class="hint">برای اعلام گروه‌تان، نقشه را روی محله‌تان ببرید، سپس دکمه زیر را بزنید.</div>
+    </div>
+    <div class="card">
+      <div class="row">
+        <label>ما چند نفر هستیم:</label>
+        <select id="bucket">
+          <option value="0">۱</option>
+          <option value="1">۲–۵</option>
+          <option value="2">۶–۱۰</option>
+          <option value="3">۱۱–۲۰</option>
+          <option value="4">۲۰+</option>
+        </select>
+        <button id="add">افزودن گروه</button>
+      </div>
+      <div class="hint">اطلاعات شما به صورت ناشناس و در قالب «سلول‌های شش‌ضلعی» ذخیره می‌شود. نقطهٔ دقیق ثبت نمی‌شود.</div>
+    </div>
+  </div>
+
+  <!-- libs -->
   <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+
   <script>
+    // --- tiny Iran city list (you can expand later) ---
+    const IR_CITIES = [
+      {n:'Tehran', fa:'تهران', lat:35.6892, lng:51.3890},
+      {n:'Mashhad', fa:'مشهد', lat:36.2605, lng:59.6168},
+      {n:'Isfahan', fa:'اصفهان', lat:32.6546, lng:51.6680},
+      {n:'Karaj', fa:'کرج', lat:35.8355, lng:50.9916},
+      {n:'Shiraz', fa:'شیراز', lat:29.5918, lng:52.5837},
+      {n:'Tabriz', fa:'تبریز', lat:38.0962, lng:46.2738},
+      {n:'Qom', fa:'قم', lat:34.6401, lng:50.8764},
+      {n:'Ahvaz', fa:'اهواز', lat:31.3183, lng:48.6706},
+      {n:'Kermanshah', fa:'کرمانشاه', lat:34.3142, lng:47.0650},
+      {n:'Urmia', fa:'ارومیه', lat:37.5517, lng:45.0760}
+    ];
+    const fuse = new Fuse(IR_CITIES, { keys: ['n', 'fa'], threshold: 0.3 });
+
+    // --- map ---
     const map = new maplibregl.Map({
       container: 'map',
-      // Dev-friendly raster tiles so you see a map immediately.
-      // We'll swap to self-hosted vector tiles before launch.
+      // Dev raster tiles; we’ll swap to self-hosted vector tiles later.
       style: {
         version: 8,
         sources: {
-          osm: {
-            type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            attribution: '© OpenStreetMap contributors',
-          },
+          osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256,
+            attribution:'© OpenStreetMap' }
         },
-        layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
+        layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
       },
-      center: [54, 32],  // [lng, lat]
-      zoom: 4.5,
-      minZoom: 3,
-      maxZoom: 16
+      center: [54, 32],
+      zoom: 4.5, minZoom:3, maxZoom:16
+    });
+    map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+    // Hex source/layers (aggregates from API)
+    map.on('load', () => {
+      map.addSource('cells', { type: 'geojson', data: { type:'FeatureCollection', features: [] } });
+      map.addLayer({
+        id: 'cells-fill', type: 'fill', source: 'cells',
+        paint: {
+          'fill-color': [
+            'interpolate', ['linear'], ['get', 'count'],
+            0, '#00000000',
+            20, '#3b82f6',
+            50, '#22c55e',
+            100, '#eab308',
+            200, '#ef4444'
+          ],
+          'fill-opacity': 0.45
+        }
+      });
+      map.addLayer({ id:'cells-outline', type:'line', source:'cells', paint:{'line-color':'#ffffff','line-width':0.6,'line-opacity':0.5}});
+      refreshAgg();
     });
 
-    map.addControl(new maplibregl.NavigationControl(), 'top-right');
+    // Debounced refresh when map stops moving
+    let refreshTimer;
+    map.on('moveend', () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(refreshAgg, 250); });
+
+    async function refreshAgg(){
+      const b = map.getBounds();
+      const z = map.getZoom();
+      const url = `/api/agg?bbox=${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}&z=${z.toFixed(1)}`;
+      try {
+        const gj = await fetch(url, { cache:'no-store' }).then(r=>r.json());
+        const src = map.getSource('cells');
+        if (src) src.setData(gj);
+      } catch(e){ console.warn('agg fetch failed', e); }
+    }
+
+    // --- Search ---
+    document.getElementById('goto').onclick = () => {
+      const q = (document.getElementById('search').value || '').trim();
+      if (!q) return;
+      const res = fuse.search(q, { limit: 1 });
+      if (res.length) {
+        const { lat, lng } = res[0].item;
+        map.easeTo({ center:[lng, lat], zoom: 10 });
+      }
+    };
+
+    // --- Anonymous device token (local only; we send a one-way hash) ---
+    async function getHashedDevice(){
+      let id = localStorage.getItem('deviceId');
+      if (!id) {
+        const buf = crypto.getRandomValues(new Uint8Array(32));
+        id = Array.from(buf).map(b=>b.toString(16).padStart(2,'0')).join('');
+        localStorage.setItem('deviceId', id);
+      }
+      const enc = new TextEncoder().encode(id);
+      const hash = await crypto.subtle.digest('SHA-256', enc);
+      return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }
+
+    // --- Submit group (bucket) for current map center ---
+    document.getElementById('add').onclick = async () => {
+      const bucket = +document.getElementById('bucket').value; // 0..4
+      const c = map.getCenter();
+      const h3 = h3core.latLngToCell(c.lat, c.lng, 8); // neighborhood-ish
+      const hashedDevice = await getHashedDevice();
+      try {
+        const res = await fetch('/api/submit', {
+          method: 'POST', headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify({ h3, bucket, hashedDevice })
+        });
+        if (res.ok) {
+          alert('ثبت شد. ممکن است به خاطر آستانهٔ محرمانگی، تا رسیدن تعداد همسایه‌ها در نقشه دیده نشود.');
+          refreshAgg();
+        } else {
+          const err = await res.json().catch(()=> ({}));
+          alert(err?.message || 'خطا در ثبت.');
+        }
+      } catch(e){ alert('ارتباط با سرور برقرار نشد.'); }
+    };
   </script>
 </body>
 </html>
