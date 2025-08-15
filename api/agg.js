@@ -31,19 +31,17 @@ export default async function handler(req, res) {
       .select('h3,bucket,created_at')
       .gte('created_at', since);
 
-    if (error) {
-      return res.status(500).json({ message: 'DB read error', detail: error.message || error });
-    }
+    if (error) return res.status(500).json({ message: 'DB read error', detail: error.message || error });
 
     const agg = new Map();
     for (const r of rows) {
       const parent = h3.cellToParent(r.h3, resZoom);
       const boundary = h3.cellToBoundary(parent, true);
-      let intersects = false;
+      let inside = false;
       for (const [lat, lng] of boundary) {
-        if (lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng) { intersects = true; break; }
+        if (lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng) { inside = true; break; }
       }
-      if (!intersects) continue;
+      if (!inside) continue;
       agg.set(parent, (agg.get(parent) || 0) + BUCKET_MID[r.bucket || 0]);
     }
 
