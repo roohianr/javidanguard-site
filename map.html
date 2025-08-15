@@ -40,6 +40,7 @@
           <option value="3">۱۱–۲۰</option>
           <option value="4">۲۰+</option>
         </select>
+        <div class="hint" id="where">محدوده انتخاب‌شده: زوم کنید روی محله دقیق‌تان.</div>
         <button id="add">افزودن گروه</button>
       </div>
       <div class="hint">اطلاعات شما به صورت ناشناس و در قالب «سلول‌های شش‌ضلعی» ذخیره می‌شود. نقطهٔ دقیق ثبت نمی‌شود.</div>
@@ -86,28 +87,49 @@
 
     // Hex source/layers (aggregates from API)
     map.on('load', () => {
-      map.addSource('cells', { type: 'geojson', data: { type:'FeatureCollection', features: [] } });
-      map.addLayer({
-        id: 'cells-fill', type: 'fill', source: 'cells',
-        paint: {
-          'fill-color': [
-            'interpolate', ['linear'], ['get', 'count'],
-            0, '#00000000',
-            20, '#3b82f6',
-            50, '#22c55e',
-            100, '#eab308',
-            200, '#ef4444'
-          ],
-          'fill-opacity': 0.45
-        }
-      });
-      map.addLayer({ id:'cells-outline', type:'line', source:'cells', paint:{'line-color':'#ffffff','line-width':0.6,'line-opacity':0.5}});
-      refreshAgg();
-    });
+  // aggregates layer
+  map.addSource('cells', { type: 'geojson', data: { type:'FeatureCollection', features: [] } });
+  map.addLayer({
+    id: 'cells-fill', type: 'fill', source: 'cells',
+    paint: {
+      'fill-color': ['interpolate',['linear'],['get','count'],0,'#0000',20,'#3b82f6',50,'#22c55e',100,'#eab308',200,'#ef4444'],
+      'fill-opacity': 0.45
+    }
+  });
+  map.addLayer({ id:'cells-outline', type:'line', source:'cells',
+    paint:{'line-color':'#fff','line-width':0.6,'line-opacity':0.5}
+  });
 
-    // Debounced refresh when map stops moving
-    let refreshTimer;
-    map.on('moveend', () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(refreshAgg, 250); });
+  // selected hex preview
+  map.addSource('selected', { type:'geojson', data:{ type:'FeatureCollection', features:[] } });
+  map.addLayer({ id:'selected-fill', type:'fill', source:'selected',
+    paint:{ 'fill-color':'#ffffff', 'fill-opacity':0.12 }});
+  map.addLayer({ id:'selected-line', type:'line', source:'selected',
+    paint:{ 'line-color':'#ffffff', 'line-width':1.2 }});
+
+  refreshAgg();
+  updateSelected();
+});
+
+function updateSelected(){
+  const c = map.getCenter();
+  const cell = h3core.latLngToCell(c.lat, c.lng, 8);
+  const boundary = h3core.cellToBoundary(cell, true).map(([lat,lng])=>[lng,lat]);
+  const gj = { type:'FeatureCollection', features:[{
+    type:'Feature', properties:{ cell }, geometry:{ type:'Polygon', coordinates:[[...boundary, boundary[0]]] }
+  }]};
+  map.getSource('selected')?.setData(gj);
+
+  const z = map.getZoom().toFixed(1);
+  document.getElementById('where').textContent =
+    `محدوده انتخاب‌شده (شش‌ضلعی محله): ${cell} — زوم فعلی: ${z}`;
+}
+
+// keep both previews in sync
+let refreshTimer;
+map.on('move', () => updateSelected());
+map.on('moveend', () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(refreshAgg, 250); });
+
 
     async function refreshAgg(){
       const b = map.getBounds();
@@ -145,25 +167,31 @@
     }
 
     // --- Submit group (bucket) for current map center ---
-    document.getElementById('add').onclick = async () => {
-      const bucket = +document.getElementById('bucket').value; // 0..4
-      const c = map.getCenter();
-      const h3 = h3core.latLngToCell(c.lat, c.lng, 8); // neighborhood-ish
-      const hashedDevice = await getHashedDevice();
-      try {
-        const res = await fetch('/api/submit', {
-          method: 'POST', headers: { 'Content-Type':'application/json' },
-          body: JSON.stringify({ h3, bucket, hashedDevice })
-        });
-        if (res.ok) {
-          alert('ثبت شد. ممکن است به خاطر آستانهٔ محرمانگی، تا رسیدن تعداد همسایه‌ها در نقشه دیده نشود.');
-          refreshAgg();
-        } else {
-          const err = await res.json().catch(()=> ({}));
-          alert(err?.message || 'خطا در ثبت.');
-        }
-      } catch(e){ alert('ارتباط با سرور برقرار نشد.'); }
-    };
+ document.getElementById('add').onclick = async () => {
+  if (map.getZoom() < 12) {
+    alert('لطفاً بیشتر بزرگنمایی کنید (حداقل زوم ۱۲) و مرکز نقشه را روی محله‌تان قرار دهید.');
+    return;
+  }
+  const bucket = +document.getElementById('bucket').value;
+  const c = map.getCenter();
+  const h3 = h3core.latLngToCell(c.lat, c.lng, 8);
+  const hashedDevice = await getHashedDevice();
+  try {
+    const res = await fetch('/api/submit', {
+      method: 'POST', headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ h3, bucket, hashedDevice })
+    });
+    const text = await res.text();
+    let json; try { json = JSON.parse(text) } catch {}
+    if (res.ok) {
+      alert('ثبت شد. به‌دلیل محرمانگی ممکن است تا رسیدن همسایه‌ها در نقشه دیده نشود.');
+      refreshAgg();
+    } else {
+      alert(`خطا (${res.status}): ${json?.message || text.slice(0,140)}`);
+    }
+  } catch(e){ alert('ارتباط با سرور برقرار نشد.'); }
+};
+
   </script>
 </body>
 </html>
