@@ -2,9 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import * as h3 from 'h3-js';
 
 const BUCKET_MID = [1, 3, 8, 15, 25];
-const DEFAULT_K = 2;
+const DEFAULT_K = 20;
 const K = Math.max(1, Number(process.env.K_THRESHOLD || DEFAULT_K));
-
 const NOISE = 1;
 
 export default async function handler(req, res) {
@@ -36,22 +35,37 @@ export default async function handler(req, res) {
     if (error) return res.status(500).json({ message: 'DB read error', detail: error.message || error });
 
     const agg = new Map();
+
     for (const r of rows) {
-      const parent = h3.cellToParent(r.h3, resZoom);
-      const boundary = h3.cellToBoundary(parent, true);
+      // Skip any bad H3 strings so one bad row can't crash the API
+      if (!h3.isValidCell?.(r.h3)) continue;
+
+      let parent;
+      try {
+        parent = h3.cellToParent(r.h3, resZoom);
+      } catch { continue; }
+
+      // simple bbox check using any vertex of the parent hex
       let inside = false;
-      for (const [lat, lng] of boundary) {
-        if (lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng) { inside = true; break; }
-      }
-      if (!inside) continue;
+      try {
+        const boundary = h3.cellToBoundary(parent, true);
+        for (const [lat, lng] of boundary) {
+          if (lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng) { inside = true; break; }
+        }
+        if (!inside) continue;
+      } catch { continue; }
+
       agg.set(parent, (agg.get(parent) || 0) + BUCKET_MID[r.bucket || 0]);
     }
 
     const features = [];
     for (const [cell, count0] of agg.entries()) {
       if (count0 < K) continue;
+      let boundary;
+      try {
+        boundary = h3.cellToBoundary(cell, true).map(([lat,lng]) => [lng, lat]);
+      } catch { continue; }
       const count = Math.max(0, count0 + laplace(NOISE));
-      const boundary = h3.cellToBoundary(cell, true).map(([lat,lng]) => [lng, lat]);
       features.push({
         type: 'Feature',
         properties: { cell, count: Math.round(count) },
