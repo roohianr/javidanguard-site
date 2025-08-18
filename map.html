@@ -131,21 +131,20 @@
       map.addSource('cells', { type: 'geojson', data: emptyFC() });
       map.addLayer({
         id: 'cells-fill', type: 'fill', source: 'cells',
-        paint: {
-          'fill-color': [
-            'interpolate', ['linear'], ['get', 'count'],
-            0,  '#00000000',
-            20, '#3b82f6',
-            50, '#22c55e',
-            100, '#eab308',
-            200, '#ef4444'
-          ],
-          'fill-opacity': 0.45
+        'fill-color': [
+      'step', ['get','count'],
+      '#00000000',   // 0 = fully transparent
+      1, '#10b981',  // 1..19 = green
+      20, '#3b82f6', // 20..49 = blue
+      50, '#eab308', // 50..99 = yellow
+      100, '#ef4444' // 100+ = red
+    ],
+    'fill-opacity': 0.6
         }
       });
       map.addLayer({
         id:'cells-outline', type:'line', source:'cells',
-        paint:{ 'line-color':'#ffffff', 'line-width':0.6, 'line-opacity':0.5 }
+        paint:{ 'line-color':'#ffffff', 'line-width':1.2, 'line-opacity':0.9 }
       });
 
       // Selected hex preview at map center
@@ -185,16 +184,13 @@
     async function refreshAgg(){
       const b = map.getBounds();
       const z = map.getZoom();
-      const url = `/api/agg?bbox=${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}&z=${z.toFixed(1)}`;
-      try {
-        const r = await fetch(url, { cache:'no-store' });
-        if (!r.ok) throw new Error(`${r.status}`);
-        const gj = await r.json();
-        map.getSource('cells')?.setData(gj);
-      } catch(e){
-        // Silent in UI; log to console for debugging
-        console.warn('agg fetch failed:', e);
-      }
+     const url = `/api/agg?bbox=${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}&z=${z.toFixed(1)}&_t=${Date.now()}`;
+  try {
+    const gj = await fetch(url, { cache:'no-store' }).then(r=>r.json());
+    console.log('agg features:', gj.features?.length || 0);
+    map.getSource('cells')?.setData(gj);
+  } catch(e){ console.warn('agg fetch failed', e); }
+}
     }
 
     // --- Search ---
