@@ -71,43 +71,57 @@
     map.addControl(new maplibregl.NavigationControl(), 'top-right');
     map.on('error', e => console.warn('map error', e));
 
-    map.on('load', () => {
-      dbg('map loaded');
+     map.on('load', async () => {
+    dbg('map loaded');
 
-      map.loadImage(soldierURL, (err, img) => {
-        if (!err && img && !map.hasImage('soldier')) map.addImage('soldier', img, { pixelRatio: 2 });
-      });
+    // Ensure the soldier image is registered before adding the symbol layer
+    await ensureSoldierImage();
 
-      map.addSource('agg', { type:'geojson', data: { type:'FeatureCollection', features:[] } });
+    // Data source for aggregated points
+    map.addSource('agg', { type: 'geojson', data: { type:'FeatureCollection', features:[] } });
 
-      map.addLayer({
-        id:'agg-icons', type:'symbol', source:'agg',
-        layout:{
-          'icon-image': 'soldier',
-          'icon-size': ['interpolate',['linear'],['zoom'], 4,0.6, 10,1.0, 16,1.6],
-          'icon-allow-overlap': true,
-          'text-field': ['to-string', ['get','count']],
-          'text-font': ['Open Sans Bold','Arial Unicode MS Bold'],
-          'text-size': ['interpolate',['linear'],['zoom'], 4,11, 10,13, 16,16],
-          'text-offset': [0, -1.2],
-          'text-allow-overlap': true
-        },
-        paint:{
-          'text-color': '#ffffff',
-          'text-halo-color': '#0b0b0b',
-          'text-halo-width': 1.6
-        }
-      });
+    map.addLayer({
+      id:'agg-icons', type:'symbol', source:'agg',
+      layout:{
+        'icon-image': 'soldier',
+        'icon-size': ['interpolate',['linear'],['zoom'], 4,0.6, 10,1.0, 16,1.6],
+        'icon-allow-overlap': true,
+        'text-field': ['to-string', ['get','count']],
+        'text-font': ['Open Sans Bold','Arial Unicode MS Bold'],
+        'text-size': ['interpolate',['linear'],['zoom'], 4,11, 10,13, 16,16],
+        'text-offset': [0, -1.2],
+        'text-allow-overlap': true
+      },
+      paint:{
+        'text-color': '#ffffff',
+        'text-halo-color': '#0b0b0b',
+        'text-halo-width': 1.6
+      }
+    });
 
-      // selected hex (for clarity when submitting)
-      map.addSource('selected', { type:'geojson', data:{ type:'FeatureCollection', features:[] } });
-      map.addLayer({ id:'selected-fill', type:'fill', source:'selected',
-        paint:{ 'fill-color':'#ffffff', 'fill-opacity':0.10 }});
-      map.addLayer({ id:'selected-line', type:'line', source:'selected',
-        paint:{ 'line-color':'#ffffff', 'line-width':1.0 }});
+    // Selected hex preview
+    map.addSource('selected', { type:'geojson', data:{ type:'FeatureCollection', features:[] } });
+    map.addLayer({ id:'selected-fill', type:'fill', source:'selected',
+      paint:{ 'fill-color':'#ffffff', 'fill-opacity':0.10 }});
+    map.addLayer({ id:'selected-line', type:'line', source:'selected',
+      paint:{ 'line-color':'#ffffff', 'line-width':1.0 }});
 
-      updateSelected();
-      refreshAgg();
+    updateSelected();
+    refreshAgg();
+  });
+
+  // soldier icon as data URL + promise loader
+  const soldierSVG = encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="#10b981"><path d="M12 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm-5 9h10l2 7h-3v4h-2v-4h-4v4H8v-4H5l2-7z"/></svg>`);
+  const soldierURL = `data:image/svg+xml;charset=utf-8,${soldierSVG}`;
+
+  async function ensureSoldierImage() {
+    if (map.hasImage('soldier')) return;
+    const img = await new Promise((resolve, reject) => {
+      map.loadImage(soldierURL, (err, img) => err ? reject(err) : resolve(img));
+    });
+    map.addImage('soldier', img, { pixelRatio: 2 });
+  }
+
     });
 
     function updateSelected(){
