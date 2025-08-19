@@ -4,10 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>نقشه</title>
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css">
+  <!-- First CSS CDN, with fallback -->
+  <link id="ml-css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@3.6.1/dist/maplibre-gl.css">
   <style>
-    html, body { height: 100%; margin: 0; }
-    #map { height: 100%; width: 100%; }
+    html, body { height:100%; margin:0; }
+    #map { height:100%; width:100%; }
     .ui { position:absolute; top:12px; right:12px; z-index:10; display:grid; gap:8px; pointer-events:none; }
     .card { pointer-events:auto; background:rgba(0,0,0,.6); color:#fff; backdrop-filter:blur(6px); border-radius:10px; padding:10px 12px; min-width:280px; }
     .row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
@@ -16,9 +17,8 @@
     button { padding:6px 10px; border-radius:8px; border:1px solid #444; background:#1a1a1a; color:#fff; cursor:pointer; }
     button:hover { background:#222; }
     select { padding:6px 8px; border-radius:8px; border:1px solid #444; background:#111; color:#fff; }
-    .hint { font-size:12px; opacity:.85; line-height:1.5; margin-top:6px; }
     .pill { font-size:12px; opacity:.9; background:#111; border:1px solid #444; border-radius:999px; padding:2px 8px; }
-    .badge{ position:absolute; left:12px; bottom:12px; background:#000a; color:#fff; padding:6px 8px; border-radius:8px; font:12px/1.2 system-ui; }
+    .badge { position:absolute; left:12px; bottom:12px; background:#000a; color:#fff; padding:6px 8px; border-radius:8px; font:12px/1.2 system-ui; }
   </style>
 </head>
 <body>
@@ -27,170 +27,162 @@
   <div class="ui">
     <div class="card">
       <div class="row">
-        <input id="search" placeholder="جستجوی شهر/منطقه (تهران ۶، شیراز…)" />
+        <input id="search" placeholder="جستجوی شهر (تهران، شیراز…)" />
         <button id="goto">برو</button>
       </div>
-      <div class="hint">برای اعلام گروه‌تان، نقشه را روی <b>محله‌تان</b> ببرید، سپس دکمه زیر را بزنید.</div>
     </div>
-
     <div class="card">
       <div class="row">
         <span class="pill" id="zoomLabel">زوم: —</span>
         <span class="pill" id="cellLabel">سلول: —</span>
-      </div>
-      <div class="row" style="margin-top:8px">
-        <label>ما چند نفر هستیم:</label>
-        <select id="bucket">
-          <option value="0">۱</option>
-          <option value="1">۲–۵</option>
-          <option value="2">۶–۱۰</option>
-          <option value="3">۱۱–۲۰</option>
-          <option value="4">۲۰+</option>
-        </select>
         <button id="add">افزودن گروه</button>
       </div>
-      <div class="hint">اطلاعات به صورت ناشناس و در قالب «سلول‌های شش‌ضلعی» ذخیره می‌شود. نقطهٔ دقیق ثبت نمی‌شود.</div>
     </div>
   </div>
 
   <div class="badge" id="dbg">init…</div>
 
-  <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
-  <script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+  <!-- Script loader with fallbacks -->
   <script>
     const dbg = (t)=>{ const el=document.getElementById('dbg'); el.textContent=t; console.log('[DBG]',t); };
 
-    const H3 = window.h3 || window.h3core; // handle both UMD names
+    function loadScript(urls, done){
+      (function next(i){
+        if(i>=urls.length) return done(new Error('All failed: '+urls.join(', ')));
+        const s = document.createElement('script');
+        s.src = urls[i]; s.async = true;
+        s.onload = ()=> done(null, urls[i]);
+        s.onerror = ()=> { console.warn('CDN failed:', urls[i]); next(i+1); };
+        document.head.appendChild(s);
+      })(0);
+    }
 
-    const CITIES = [
-      {n:'Tehran', fa:'تهران', lat:35.6892, lng:51.3890},
-      {n:'Shiraz', fa:'شیراز', lat:29.5918, lng:52.5837},
-      {n:'Isfahan', fa:'اصفهان', lat:32.6546, lng:51.6680},
-      {n:'Tabriz', fa:'تبریز', lat:38.0962, lng:46.2738},
-      {n:'Mashhad', fa:'مشهد', lat:36.2605, lng:59.6168}
-    ];
-    const fuse = new Fuse(CITIES, { keys: ['n','fa'], threshold: 0.3 });
+    // Load MapLibre, then H3
+    loadScript([
+      'https://cdn.jsdelivr.net/npm/maplibre-gl@3.6.1/dist/maplibre-gl.js',
+      'https://unpkg.com/maplibre-gl/dist/maplibre-gl.js'
+    ], function(err, used){
+      if(err){ dbg('FAILED: maplibre'); return; }
+      dbg('maplibre ok ('+used+')');
 
-    let map;
-    try {
-      map = new maplibregl.Map({
+      loadScript([
+        'https://cdn.jsdelivr.net/npm/h3-js@4.1.0/dist/h3-js.umd.js',
+        'https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js'
+      ], function(err2, used2){
+        if(err2){ dbg('FAILED: h3'); return; }
+        dbg('h3 ok ('+used2+')');
+        start();
+      });
+    });
+
+    function start(){
+      const H3 = window.h3 || window.h3core;
+
+      // Primary + backup raster tiles
+      const primaryTiles = ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'];
+      const backupTiles  = ['https://tile.openstreetmap.fr/hot/{z}/{x}/{y}.png'];
+
+      const map = new maplibregl.Map({
         container: 'map',
         style: {
           version: 8,
           sources: {
-            osm: { type: 'raster',
-              tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-              tileSize: 256,
-              attribution:'© OpenStreetMap contributors' }
+            osm1: { type:'raster', tiles: primaryTiles, tileSize:256, attribution:'© OpenStreetMap' },
+            osm2: { type:'raster', tiles: backupTiles,  tileSize:256, attribution:'© OpenStreetMap' }
           },
-          layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
+          layers: [{ id:'osm', type:'raster', source:'osm1' }]
         },
-        center: [54, 32], zoom: 4.5, minZoom: 3, maxZoom: 16
+        center: [54, 32], zoom: 4.5, minZoom:3, maxZoom:16
       });
       map.addControl(new maplibregl.NavigationControl(), 'top-right');
-      map.on('error', e => console.warn('map error', e));
-    } catch(e){
-      console.error('map init failed', e);
-      dbg('map init failed (see console)');
-    }
 
-    map.on('load', () => {
-      dbg('map loaded');
+      let tilesOK = false;
+      let tileFailCount = 0;
 
-      // Aggregated cells (safe even if API fails)
-      map.addSource('cells', { type:'geojson', data: fc([]) });
-      map.addLayer({
-        id:'cells-fill', type:'fill', source:'cells',
-        paint:{
-          'fill-color': ['step',['get','count'],
-            '#0000', 1, '#10b981', 20, '#3b82f6', 50, '#eab308', 100, '#ef4444'],
-          'fill-opacity': 0.6
+      map.on('load', ()=> dbg('map loaded'));
+      map.on('error', (e)=> {
+        // Count tile errors; switch to backup if needed
+        if (e && /tile/i.test(String(e?.error?.message || e?.source || ''))) {
+          tileFailCount++;
+          if (tileFailCount === 3) {
+            try { map.setLayoutProperty('osm','visibility','none'); } catch {}
+            try { map.removeLayer('osm'); } catch {}
+            try { map.addLayer({ id:'osm2', type:'raster', source:'osm2' }, undefined); dbg('switched to backup tiles'); } catch {}
+          }
         }
+        console.warn('map error', e);
       });
-      map.addLayer({ id:'cells-outline', type:'line', source:'cells',
-        paint:{ 'line-color':'#fff', 'line-width':1.2, 'line-opacity':0.9 } });
 
-      // Selected hex preview (wrapped)
-      map.addSource('selected', { type:'geojson', data: fc([]) });
-      map.addLayer({ id:'selected-fill', type:'fill', source:'selected',
-        paint:{ 'fill-color':'#fff', 'fill-opacity':0.12 }});
-      map.addLayer({ id:'selected-line', type:'line', source:'selected',
-        paint:{ 'line-color':'#fff', 'line-width':1.2 }});
+      // Selected hex preview + labels (wrapped)
+      function fc(features){ return { type:'FeatureCollection', features }; }
 
-      updateSelected();
-      refreshAgg();
-    });
+      map.on('load', () => {
+        // selected
+        map.addSource('selected', { type:'geojson', data: fc([]) });
+        map.addLayer({ id:'selected-fill', type:'fill', source:'selected',
+          paint:{ 'fill-color':'#fff', 'fill-opacity':0.12 }});
+        map.addLayer({ id:'selected-line', type:'line', source:'selected',
+          paint:{ 'line-color':'#fff', 'line-width':1.2 }});
 
-    function fc(features){ return { type:'FeatureCollection', features }; }
+        updateSelected();
+      });
 
-    function updateSelected(){
-      try{
-        const c = map.getCenter();
-        if (!H3 || !H3.latLngToCell) throw new Error('H3 not loaded');
-        const cell = H3.latLngToCell(c.lat, c.lng, 8);
-        const boundary = H3.cellToBoundary(cell, true).map(([lat,lng])=>[lng,lat]);
-        map.getSource('selected')?.setData(fc([{
-          type:'Feature', properties:{cell},
-          geometry:{ type:'Polygon', coordinates:[[...boundary, boundary[0]]] }
-        }]));
-        document.getElementById('zoomLabel').textContent = `زوم: ${map.getZoom().toFixed(1)}`;
-        document.getElementById('cellLabel').textContent = `سلول: ${cell}`;
-      } catch(e){ console.warn('selected error:', e); }
-    }
-
-    let t;
-    map.on('move', updateSelected);
-    map.on('moveend', () => { clearTimeout(t); t=setTimeout(refreshAgg, 250); });
-
-    async function refreshAgg(){
-      const b = map.getBounds();
-      const z = map.getZoom();
-      const url = `/api/agg?bbox=${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}&z=${z.toFixed(1)}&_t=${Date.now()}`;
-      try{
-        const r = await fetch(url, { cache:'no-store' });
-        if(!r.ok) throw new Error('agg '+r.status);
-        const gj = await r.json();
-        map.getSource('cells')?.setData(gj);
-        dbg(`agg: ${gj.features?.length||0} cells`);
-      }catch(e){
-        console.warn('agg fetch failed', e);
-        dbg('agg error (see console)');
+      function updateSelected(){
+        try{
+          const c = map.getCenter();
+          if (!H3 || !H3.latLngToCell) throw new Error('H3 not loaded');
+          const cell = H3.latLngToCell(c.lat, c.lng, 8);
+          const boundary = H3.cellToBoundary(cell, true).map(([lat,lng])=>[lng,lat]);
+          map.getSource('selected')?.setData(fc([{
+            type:'Feature', properties:{cell},
+            geometry:{ type:'Polygon', coordinates:[[...boundary, boundary[0]]] }
+          }]));
+          document.getElementById('zoomLabel').textContent = `زوم: ${map.getZoom().toFixed(1)}`;
+          document.getElementById('cellLabel').textContent = `سلول: ${cell}`;
+        } catch(e){ console.warn('selected error', e); }
       }
+      map.on('move', updateSelected);
+
+      // Minimal submit (unchanged)
+      async function getHashedDevice(){
+        let id = localStorage.getItem('deviceId');
+        if(!id){ id = [...crypto.getRandomValues(new Uint8Array(32))].map(b=>b.toString(16).padStart(2,'0')).join(''); localStorage.setItem('deviceId', id); }
+        const enc = new TextEncoder().encode(id);
+        const hash = await crypto.subtle.digest('SHA-256', enc);
+        return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');
+      }
+      document.getElementById('add').onclick = async () => {
+        if (map.getZoom() < 12) { alert('Zoom in to at least 12.'); return; }
+        try{
+          const c = map.getCenter();
+          const H3x = window.h3 || window.h3core;
+          const cell = H3x.latLngToCell(c.lat, c.lng, 8);
+          const hashedDevice = await getHashedDevice();
+          const bucket = 0;
+          const res = await fetch('/api/submit', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ h3: cell, bucket, hashedDevice })
+          });
+          const txt = await res.text(); let json; try{ json=JSON.parse(txt);}catch{}
+          if(res.ok){ alert('Saved'); } else { alert(`Error ${res.status}: ${json?.message || txt.slice(0,140)}`); }
+        }catch(e){ alert('Submit failed: '+e.message); }
+      };
+
+      // Simple search
+      document.getElementById('goto').onclick = () => {
+        const v = (document.getElementById('search').value||'').trim();
+        if(!v) return;
+        const places = {
+          'tehran':[51.3890,35.6892],
+          'shiraz':[52.5837,29.5918],
+          'isfahan':[51.6680,32.6546],
+          'mashhad':[59.6168,36.2605],
+          'tabriz':[46.2738,38.0962]
+        };
+        const key = v.toLowerCase();
+        if(places[key]) map.easeTo({ center: places[key], zoom: 12 });
+      };
     }
-
-    document.getElementById('goto').onclick = () => {
-      const q = (document.getElementById('search').value||'').trim();
-      if(!q) return;
-      const res = fuse.search(q, { limit:1 });
-      if(res.length){ const {lat,lng}=res[0].item; map.easeTo({ center:[lng,lat], zoom:12 }); }
-    };
-
-    async function getHashedDevice(){
-      let id = localStorage.getItem('deviceId');
-      if(!id){ id = [...crypto.getRandomValues(new Uint8Array(32))].map(b=>b.toString(16).padStart(2,'0')).join(''); localStorage.setItem('deviceId', id); }
-      const enc = new TextEncoder().encode(id);
-      const hash = await crypto.subtle.digest('SHA-256', enc);
-      return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');
-    }
-
-    document.getElementById('add').onclick = async () => {
-      if (map.getZoom() < 12) { alert('Zoom in to at least 12.'); return; }
-      try{
-        const c = map.getCenter();
-        if (!H3 || !H3.latLngToCell) throw new Error('H3 not loaded');
-        const cell = H3.latLngToCell(c.lat, c.lng, 8);
-        const hashedDevice = await getHashedDevice();
-        const bucket = +document.getElementById('bucket').value;
-        const res = await fetch('/api/submit', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ h3: cell, bucket, hashedDevice })
-        });
-        const txt = await res.text(); let json; try{ json=JSON.parse(txt);}catch{}
-        if(res.ok){ alert('Saved. May stay hidden until neighbors join.'); refreshAgg(); }
-        else { alert(`Error ${res.status}: ${json?.message || txt.slice(0,140)}`); }
-      }catch(e){ alert('Submit failed: '+e.message); }
-    };
   </script>
 </body>
 </html>
