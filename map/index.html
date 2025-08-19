@@ -108,6 +108,22 @@
 
     updateSelected();
     refreshAgg();
+       <button id="testIcon">Test icon here</button>
+
+<script>
+  document.getElementById('testIcon').onclick = () => {
+    const c = map.getCenter();
+    const test = {
+      type:'FeatureCollection',
+      features:[{
+        type:'Feature',
+        properties:{ count: 7, cell: 'test' },
+        geometry:{ type:'Point', coordinates:[c.lng, c.lat] }
+      }]
+    };
+    map.getSource('agg')?.setData(test);
+    dbg('icons: 1 (test)');
+  };
   });
 
   // soldier icon as data URL + promise loader
