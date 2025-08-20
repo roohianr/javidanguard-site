@@ -48,7 +48,22 @@ function parsePath(req){
   const path = url.pathname.replace(/^\/api\/?/, ''); // e.g. "auth/reg-start"
   return { url, path };
 }
-
+// add near the other helpers
+function handleHealth(req, res) {
+  const ok = !!process.env.SUPABASE_URL && !!process.env.SUPABASE_SERVICE_KEY;
+  return res.status(200).json({
+    ok,
+    hasUrl: !!process.env.SUPABASE_URL,
+    hasKey: !!process.env.SUPABASE_SERVICE_KEY,
+    node: process.version
+  });
+}
+function handleK(req, res) {
+  return res.status(200).json({
+    K: Math.max(1, Number(process.env.K_THRESHOLD || DEFAULT_K)),
+    NOISE_B: Number(process.env.NOISE_B || 0)
+  });
+}
 // ---------- auth helpers ----------
 async function requireSession(req){
   const { SESSION_SECRET } = process.env;
@@ -400,7 +415,9 @@ export default async function handler(req, res) {
     if (path === 'submit') return handleSubmit(req,res);
     if (path === 'admin/agg2' && req.method==='GET') return handleAdminAgg2(req,res,url);
     if (path === 'admin/seed') return handleAdminSeed(req,res);
-
+    // k and health
+    if (path === 'health' && req.method === 'GET') return handleHealth(req, res);
+    if (path === 'k' && req.method === 'GET') return handleK(req, res);
     // auth
     if (path === 'auth/reg-start') return handleRegStart(req,res);
     if (path === 'auth/reg-finish') return handleRegFinish(req,res);
