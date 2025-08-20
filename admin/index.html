@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css">
+  <style>
+    html,body,#map {height:100%;margin:0}
+    .panel{position:absolute;top:10px;left:10px;background:#000a;color:#fff;padding:10px;border-radius:10px;backdrop-filter:blur(6px)}
+    .row{display:flex;gap:6px;align-items:center;margin-top:6px}
+    input,button,select{font:inherit}
+    button{padding:6px 10px;border-radius:8px;border:1px solid #444;background:#1a1a1a;color:#fff;cursor:pointer}
+    .badge{position:absolute;right:10px;bottom:10px;background:#000a;color:#fff;padding:6px 8px;border-radius:8px}
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="panel">
+    <div class="row">
+      <input id="key" placeholder="Admin key" />
+      <button id="saveKey">Save</button>
+    </div>
+    <div class="row">
+      <label>Bucket:</label>
+      <select id="bucket">
+        <option value="0">1</option><option value="1">2–5</option>
+        <option value="2">6–10</option><option value="3">11–20</option>
+        <option value="4">20+</option>
+      </select>
+      <button id="seed1">Seed +1</button>
+      <button id="seed10">Seed +10</button>
+    </div>
+  </div>
+  <div class="badge" id="dbg">init…</div>
+
+  <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js"></script>
+  <script>
+    const dbg = t => (document.getElementById('dbg').textContent=t, console.log('[DBG]',t));
+    const H3 = window.h3 || window.h3core;
+
+    const soldierSVG = encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="#10b981"><path d="M12 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm-5 9h10l2 7h-3v4h-2v-4h-4v4H8v-4H5l2-7z"/></svg>`);
+    const soldierURL = `data:image/svg+xml;charset=utf-8,${soldierSVG}`;
+
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: { version:8, sources:{ osm:{ type:'raster', tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize:256 } }, layers:[{id:'osm',type:'raster',source:'osm'}] },
+      center:[54,32], zoom:5
+    });
+    map.addControl(new maplibregl.NavigationControl(),'top-right');
+
+    map.on('load', async () => {
+      await ensureIcon();
+      map.addSource('agg',{type:'geojson', data:{type:'FeatureCollection',features:[]}});
+      map.addLayer({
+        id:'icons', type:'symbol', source:'agg',
+        layout:{
+          'icon-image':'soldier', 'icon-size':['interpolate',['linear'],['zoom'], 4,0.6, 10,1.0, 16,1.6],
+          'icon-allow-overlap':true,
+          'text-field':['to-string',['get','count']], 'text-size':['interpolate',['linear'],['zoom'],4,11,10,13,16,16],
+          'text-offset':[0,-1.2], 'text-allow-overlap':true
+        },
+        paint:{ 'text-color':'#fff','text-halo-color':'#000','text-halo-width':1.5 }
+      });
+
+      const sel = {type:'FeatureCollection',features:[]};
+      map.addSource('selected',{type:'geojson',data:sel});
+      map.addLayer({id:'sel-fill',type:'fill',source:'selected',paint:{'fill-color':'#fff','fill-opacity':0.10}});
+      map.addLayer({id:'sel-line',type:'line',source:'selected',paint:{'line-color':'#fff','line-width':1}});
+
+      map.on('move', updateSelected);
+      map.on('moveend', () => refreshAgg(true));
+      updateSelected();
+      refreshAgg(true);
+    });
+
+    async function ensureIcon(){
+      if(map.hasImage('soldier')) return;
+      const img = await new Promise((res,rej)=> map.loadImage(soldierURL,(e,i)=> e?rej(e):res(i)));
+      map.addImage('soldier', img, { pixelRatio:2 });
+    }
+
+    function updateSelected(){
+      const c = map.getCenter();
+      const cell = H3.latLngToCell(c.lat, c.lng, 8);
+      const boundary = H3.cellToBoundary(cell, true).map(([lat,lng])=>[lng,lat]);
+      const gj = {type:'FeatureCollection',features:[{type:'Feature',properties:{cell},geometry:{type:'Polygon',coordinates:[[...boundary,boundary[0]]]}}]};
+      map.getSource('selected').setData(gj);
+    }
+
+    function getKey(){ return localStorage.getItem('ADMIN_KEY') || document.getElementById('key').value.trim(); }
+    function setKey(k){ localStorage.setItem('ADMIN_KEY', k); document.getElementById('key').value = k; }
+
+    document.getElementById('saveKey').onclick = ()=> setKey(document.getElementById('key').value.trim());
+    document.getElementById('seed1').onclick = ()=> seed(1);
+    document.getElementById('seed10').onclick = ()=> seed(10);
+
+    async function seed(n){
+      const key = getKey(); if(!key) return alert('enter admin key');
+      const c = map.getCenter();
+      const cell = (window.h3||window.h3core).latLngToCell(c.lat, c.lng, 8);
+      const bucket = +document.getElementById('bucket').value;
+      const r = await fetch('/api/admin/seed', { method:'POST',
+        headers:{ 'Content-Type':'application/json', 'x-admin-key': key },
+        body: JSON.stringify({ cell, n, bucket }) });
+      const js = await r.json();
+      if(!r.ok) return alert('seed error: ' + (js.message||r.status));
+      dbg('seeded '+js.inserted);
+      refreshAgg(true);
+    }
+
+    async function refreshAgg(bust){
+      const key = getKey(); if(!key) return;
+      const b = map.getBounds(); const z = map.getZoom();
+      const url = `/api/admin/agg2?bbox=${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}&z=${z.toFixed(1)}${bust?'&_t='+Date.now():''}`;
+      const r = await fetch(url, { headers:{ 'x-admin-key': key }, cache:'no-store' });
+      if(!r.ok){ dbg('agg error '+r.status); return; }
+      const gj = await r.json();
+      map.getSource('agg').setData(gj);
+      dbg(`icons: ${gj.features?.length||0}`);
+    }
+
+    // prefill key from storage
+    document.getElementById('key').value = localStorage.getItem('ADMIN_KEY') || '';
+  </script>
+</body>
+</html>
