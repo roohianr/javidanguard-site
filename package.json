@@ -4,6 +4,8 @@
   "type": "module",
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
+     "@simplewebauthn/server": "^9.0.3",
+    "@simplewebauthn/browser": "^9.0.3",
     "h3-js": "^4.1.0"
   }
 }
