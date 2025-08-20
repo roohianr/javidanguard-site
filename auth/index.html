@@ -17,27 +17,48 @@ button{cursor:pointer}
   </div>
   <div id="msg"></div>
 </div>
-<script type="module">
-import { startRegistration, startAuthentication } from 'https://cdn.skypack.dev/@simplewebauthn/browser?min';
-const $ = s=>document.querySelector(s);
-const msg = t=>($('#msg').textContent=t);
+<script src="https://unpkg.com/@simplewebauthn/browser@13.1.2/dist/bundle/index.umd.min.js"></script>
+<script>
+  const { startRegistration, startAuthentication } = window.SimpleWebAuthnBrowser;
 
-$('#reg').onclick = async ()=>{
-  try{
-    const handle = $('#handle').value || 'user';
-    const s = await fetch('/api/auth/reg-start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle})}).then(r=>r.json());
-    const att = await startRegistration(s.options);
-    const ok = await fetch('/api/auth/reg-finish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(att)}).then(r=>r.json());
-    if(ok.ok){ location.href='/user/'; } else msg(ok.message||'Registration failed');
-  }catch(e){ msg(e.message||'Registration error'); }
-};
-$('#login').onclick = async ()=>{
-  try{
-    const s = await fetch('/api/auth/login-start',{method:'POST'}).then(r=>r.json());
-    const ass = await startAuthentication(s.options);
-    const ok = await fetch('/api/auth/login-finish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ass)}).then(r=>r.json());
-    if(ok.ok){ location.href='/user/'; } else msg(ok.message||'Login failed');
-  }catch(e){ msg(e.message||'Login error'); }
-};
+  // Wire buttons (assumes you have #handle, #reg, #login)
+  document.getElementById('reg').onclick = () => {
+    const handle = document.getElementById('handle').value || 'user';
+    doRegister(handle);
+  };
+  document.getElementById('login').onclick = () => doLogin();
+
+  // Register
+  async function doRegister(handle) {
+    const start = await fetch('/api/auth/reg-start', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ handle })
+    }).then(r=>r.json());
+
+    const att = await startRegistration(start.options);
+
+    const done = await fetch('/api/auth/reg-finish', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(att)
+    }).then(r=>r.json());
+
+    if (done.ok) location.href = '/user/';
+    else alert(done.message || 'Registration failed');
+  }
+
+  // Login
+  async function doLogin() {
+    const start = await fetch('/api/auth/login-start', { method:'POST' }).then(r=>r.json());
+    const ass = await startAuthentication(start.options);
+
+    const done = await fetch('/api/auth/login-finish', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(ass)
+    }).then(r=>r.json());
+
+    if (done.ok) location.href = '/user/';
+    else alert(done.message || 'Login failed');
+  }
 </script>
+
 </body></html>
