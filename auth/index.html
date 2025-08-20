@@ -1,0 +1,43 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Sign in</title>
+<style>body{font:16px system-ui;margin:0;display:grid;place-items:center;height:100vh;background:#0b0b0f;color:#fff}
+.card{background:#111a;border:1px solid #333;padding:24px;border-radius:12px;min-width:320px}
+.row{display:flex;gap:8px;margin:.5rem 0;align-items:center}
+input,button{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid #444;background:#1a1a1a;color:#fff}
+button{cursor:pointer}
+</style>
+</head><body>
+<div class="card">
+  <h2>Passkey Sign-in</h2>
+  <div class="row"><input id="handle" placeholder="Handle (optional for register)"/></div>
+  <div class="row">
+    <button id="reg">Register passkey</button>
+    <button id="login">Login</button>
+  </div>
+  <div id="msg"></div>
+</div>
+<script type="module">
+import { startRegistration, startAuthentication } from 'https://cdn.skypack.dev/@simplewebauthn/browser?min';
+const $ = s=>document.querySelector(s);
+const msg = t=>($('#msg').textContent=t);
+
+$('#reg').onclick = async ()=>{
+  try{
+    const handle = $('#handle').value || 'user';
+    const s = await fetch('/api/auth/reg-start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle})}).then(r=>r.json());
+    const att = await startRegistration(s.options);
+    const ok = await fetch('/api/auth/reg-finish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(att)}).then(r=>r.json());
+    if(ok.ok){ location.href='/user/'; } else msg(ok.message||'Registration failed');
+  }catch(e){ msg(e.message||'Registration error'); }
+};
+$('#login').onclick = async ()=>{
+  try{
+    const s = await fetch('/api/auth/login-start',{method:'POST'}).then(r=>r.json());
+    const ass = await startAuthentication(s.options);
+    const ok = await fetch('/api/auth/login-finish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ass)}).then(r=>r.json());
+    if(ok.ok){ location.href='/user/'; } else msg(ok.message||'Login failed');
+  }catch(e){ msg(e.message||'Login error'); }
+};
+</script>
+</body></html>
