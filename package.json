@@ -2,10 +2,10 @@
   "name": "javidanguard",
   "private": true,
   "type": "module",
+  "engines": { "node": ">=20" },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
-     "@simplewebauthn/server": "^9.0.3",
-    "@simplewebauthn/browser": "^9.0.3",
+    "@simplewebauthn/server": "^13.1.2",
     "h3-js": "^4.1.0"
   }
 }
