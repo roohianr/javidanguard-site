@@ -1,0 +1,173 @@
+<!doctype html><html lang="fa" dir="rtl"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>داشبورد</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css">
+<style>
+body{margin:0;background:#0b0b0f;color:#fff;font:15px/1.5 Vazirmatn,system-ui}
+.wrap{display:grid;grid-template-columns:320px 1fr;height:100vh}
+.side{border-inline-start:1px solid #222;background:#0f1116;overflow:auto;padding:14px}
+h2{margin:.4rem 0 0.6rem}
+.card{background:#1116;border:1px solid #222;border-radius:12px;padding:12px;margin-bottom:10px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+input,select,button,textarea{font:inherit;color:#fff;background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:8px}
+button{cursor:pointer}
+.badge{display:inline-block;background:#132; color:#9ff; border:1px solid #264; padding:2px 8px; border-radius:999px}
+#map{height:100vh;width:100%}
+.msg{white-space:pre-wrap}
+.small{opacity:.8;font-size:12px}
+</style>
+</head><body>
+<div class="wrap">
+  <div class="side">
+    <div class="card"><h2>پروفایل</h2>
+      <div>نام: <b id="handle">—</b></div>
+      <div>درجه: <span class="badge" id="rank">—</span></div>
+      <div class="small">درجه بر اساس مشارکت تأییدشده و قدمت حساب تعیین می‌شود.</div>
+    </div>
+
+    <div class="card"><h2>منطقهٔ من</h2>
+      <div class="row small"><span>سلول:</span><code id="cell">—</code><span>قفل تا:</span><span id="lock">—</span></div>
+      <div class="row">
+        <select id="bucket">
+          <option value="2">۵–۱۰</option>
+          <option value="3">۱۱–۲۰</option>
+          <option value="4">۲۰+</option>
+        </select>
+        <button id="setZone">ثبت/تغییر منطقه</button>
+      </div>
+      <div class="small">* گروه‌های کمتر از ۵ نفر مجاز نیستند.</div>
+    </div>
+
+    <div class="card"><h2>صندوق پیام</h2>
+      <div id="inbox">—</div>
+    </div>
+
+    <div class="card"><h2>گفت‌وگوی منطقه</h2>
+      <div id="chat" style="max-height:220px;overflow:auto;border:1px solid #222;border-radius:8px;padding:8px;background:#0b0b0f"></div>
+      <div class="row" style="margin-top:6px">
+        <input id="chatText" placeholder="پیام..." style="flex:1 1 auto">
+        <button id="sendChat">ارسال</button>
+      </div>
+      <div class="small">* چت به سلول خوشه‌ای (H3 r7) شما محدود است.</div>
+    </div>
+  </div>
+
+  <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js"></script>
+<script>
+const H3 = window.h3 || window.h3core;
+const q = s=>document.querySelector(s);
+const msg = (el,html)=>{ el.innerHTML = html; };
+
+function rankFrom(stats){
+  // Simple placeholder: base rank from months + verified contributions
+  const months = stats.months || 0, contrib = stats.contrib || 0;
+  const score = months + 2*contrib;
+  if (score < 2) return 'سرباز';
+  if (score < 5) return 'گروهبان';
+  if (score < 9) return 'ستوان';
+  if (score < 14) return 'سروان';
+  if (score < 20) return 'سرگرد';
+  if (score < 28) return 'سرهنگ';
+  return 'امیر';
+}
+
+async function api(path, opts={}) {
+  const r = await fetch(path, { credentials:'include', ...opts });
+  if (!r.ok) throw new Error(`${path} ${r.status}`);
+  return r.json();
+}
+
+let me=null;
+async function loadMe(){
+  try{
+    me = await api('/api/me');
+    q('#handle').textContent = me.user.handle || 'ناشناس';
+    const createdAt = me.user.created_at ? new Date(me.user.created_at) : new Date();
+    const months = Math.max(0, Math.floor((Date.now()-createdAt.getTime())/ (30*24*3600*1000)));
+    const contrib = 0; // TODO: wire to accepted annotations count
+    q('#rank').textContent = rankFrom({months,contrib});
+    if (me.membership){
+      q('#cell').textContent = me.membership.cell_h3;
+      q('#lock').textContent = me.membership.locked_until?.slice(0,10) || '—';
+    }
+  }catch(e){
+    location.href = '/auth/';
+  }
+}
+
+async function setZone(){
+  try{
+    const mapCenter = map.getCenter();
+    const cell = H3.latLngToCell(mapCenter.lat, mapCenter.lng, 8);
+    const bucket = +q('#bucket').value;
+    const r = await api('/api/me/upsert-zone', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ cell_h3: cell, bucket })
+    });
+    alert('ثبت شد. تغییر بعدی از: ' + (r.locked_until||'—'));
+    q('#cell').textContent = cell;
+    q('#lock').textContent = (r.locked_until||'').slice(0,10);
+  }catch(e){
+    alert('خطا در ثبت منطقه یا قفل زمانی فعال است.');
+  }
+}
+
+async function loadInbox(){
+  try{
+    const r = await api('/api/inbox/list');
+    if (!r.items || !r.items.length) return msg(q('#inbox'), '<div class=small>پیامی ندارید.</div>');
+    msg(q('#inbox'), r.items.map(m=>`<div class=msg><b>${m.title}</b><br>${m.body}</div>`).join('<hr>'));
+  }catch(e){ msg(q('#inbox'), '<div class=small>بارگذاری نشد.</div>'); }
+}
+
+async function loadChat(){
+  try{
+    const r = await api('/api/chat/fetch');
+    const el = q('#chat');
+    el.innerHTML = r.items.map(i => `<div class=small><b>•</b> ${i.text} <span style="opacity:.6">${i.created_at.slice(11,16)}</span></div>`).join('');
+    el.scrollTop = el.scrollHeight;
+  }catch(e){ q('#chat').textContent='—'; }
+}
+async function sendChat(){
+  const t = q('#chatText').value.trim();
+  if(!t) return;
+  q('#chatText').value='';
+  try{
+    await api('/api/chat/post',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
+    loadChat();
+  }catch(e){ alert('ارسال نشد.'); }
+}
+
+q('#setZone').onclick = setZone;
+q('#sendChat').onclick = sendChat;
+
+// Map (same detailed tiles you already use)
+const map = new maplibregl.Map({
+  container: 'map',
+  style: { version:8, sources:{ osm:{ type:'raster', tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize:256 } }, layers:[{id:'osm',type:'raster',source:'osm'}] },
+  center:[54,32], zoom:5, minZoom:3, maxZoom:16
+});
+map.addControl(new maplibregl.NavigationControl(),'top-right');
+
+// Selected hex preview to help choose zone
+map.on('load', ()=>{
+  map.addSource('selected',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+  map.addLayer({id:'sel-fill',type:'fill',source:'selected',paint:{'fill-color':'#fff','fill-opacity':0.10}});
+  map.addLayer({id:'sel-line',type:'line',source:'selected',paint:{'line-color':'#fff','line-width':1}});
+  updateSel();
+});
+function updateSel(){
+  const c = map.getCenter();
+  const cell = H3.latLngToCell(c.lat, c.lng, 8);
+  const poly = H3.cellToBoundary(cell,true).map(([la,ln])=>[ln,la]);
+  map.getSource('selected')?.setData({type:'FeatureCollection',features:[{type:'Feature',properties:{},geometry:{type:'Polygon',coordinates:[[...poly,poly[0]]]}}]});
+}
+map.on('move', updateSel);
+
+loadMe().then(()=>{ loadInbox(); loadChat(); });
+</script>
+</body></html>
