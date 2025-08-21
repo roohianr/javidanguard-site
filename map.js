@@ -1,98 +1,86 @@
-// map.js
 (async function () {
-  // Wait for libs
-  await new Promise(r => { if (window.L && window.h3) r(); else window.addEventListener('load', r); });
+  // Wait for DOM
+  await new Promise(r => (document.readyState === 'complete' ? r() : window.addEventListener('load', r)));
 
-  const map = L.map('map').setView([32.4279, 53.6880], 5); // Iran
+  // Helper to show small messages
+  const set = (id, t) => (document.getElementById(id).textContent = t || '');
+
+  // Bind auth buttons immediately (even if map fails)
+  document.getElementById('btnCreate').onclick = async () => {
+    set('authMsg', '…');
+    try {
+      const r = await fetch('/api/session-create', { method:'POST' });
+      const out = await r.json();
+      if (out.ok) {
+        document.getElementById('created').style.display = 'block';
+        document.getElementById('recovery').textContent = out.recovery;
+        set('authMsg', 'Account created. Save the phrase.');
+      } else {
+        set('authMsg', 'Failed: ' + (out.message || 'unknown'));
+      }
+    } catch (e) { set('authMsg', 'Failed: ' + e.message); }
+  };
+
+  document.getElementById('btnRecover').onclick = async () => {
+    set('authMsg', '…');
+    const recovery = document.getElementById('inpRecovery').value.trim();
+    try {
+      const r = await fetch('/api/session-recover', {
+        method:'POST', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ recovery })
+      });
+      const out = await r.json();
+      set('authMsg', out.ok ? 'Recovered. You are logged in.' : ('Failed: ' + (out.message || 'unknown')));
+    } catch (e) { set('authMsg', 'Failed: ' + e.message); }
+  };
+
+  // If Leaflet or h3 failed to load, stop here but auth still works
+  if (!window.L || !window.h3) { set('status','Map libs not loaded.'); return; }
+
+  // --- MAP ---
+  const map = L.map('map', { doubleClickZoom:false }).setView([32.4279, 53.6880], 5);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap'
   }).addTo(map);
 
+  const group = L.layerGroup().addTo(map);
+  const H3_RES = 7;
   let selectedHex = null;
-  let hexLayerGroup = L.layerGroup().addTo(map);
 
-  function hexToPolygon(h) {
-    const coords = h3.cellToBoundary(h, true); // [ [lat,lng], ... ]
-    return coords.map(([lat, lng]) => [lat, lng]);
-  }
-
-  function drawHex(h, value) {
-    const poly = L.polygon(hexToPolygon(h), {
-      weight: 1,
-      fillOpacity: Math.min(0.7, 0.2 + Math.abs(+value) * 0.2)
-    });
-    poly.bindTooltip(`${h}<br/>value: ${value}`);
-    poly.on('click', () => { selectedHex = h; updateSelectionUI(); });
+  function hexPoly(h) {
+    const coords = h3.cellToBoundary(h, true).map(([lat,lng]) => [lat,lng]);
+    const poly = L.polygon(coords, { weight:1, fillOpacity:0.35 });
+    poly.bindTooltip(`${h}`);
+    poly.on('click', (e)=>{ e.originalEvent?.preventDefault?.(); selectedHex = h; updateSel(); });
     return poly;
   }
-
-  function updateSelectionUI() {
+  function updateSel() {
     document.getElementById('btnAdd').disabled = !selectedHex;
-    document.getElementById('status').textContent = selectedHex ? `Selected hex: ${selectedHex}` : '';
+    set('status', selectedHex ? `Selected: ${selectedHex}` : '');
   }
 
-  // Click to select nearest hex (res 7 ~ city-level; adjust if needed)
-  const H3_RES = 7;
-  map.on('click', e => {
-    const h = h3.latLngToCell(e.latlng.lat, e.latlng.lng, H3_RES);
-    selectedHex = h;
-    updateSelectionUI();
-  });
+  map.on('click', (e)=>{ selectedHex = h3.latLngToCell(e.latlng.lat, e.latlng.lng, H3_RES); updateSel(); });
 
-  async function loadPoints() {
-    const r = await fetch('/api/points-list');
-    const out = await r.json();
-    hexLayerGroup.clearLayers();
-    if (!out.ok) {
-      document.getElementById('status').textContent = `Load error: ${out.message || 'unknown'}`;
-      return;
-    }
-    (out.items || []).forEach(p => hexLayerGroup.addLayer(drawHex(p.h3, p.value)));
-  }
-
-  // Auth UI
-  const msg = (t) => (document.getElementById('authMsg').textContent = t || '');
-  document.getElementById('btnCreate').onclick = async () => {
-    msg('…');
-    const r = await fetch('/api/session-create', { method:'POST' });
-    const out = await r.json();
-    if (out.ok) {
-      document.getElementById('created').style.display = 'block';
-      document.getElementById('recovery').textContent = out.recovery;
-      msg('Account created. Save the phrase.');
-    } else {
-      msg('Failed: ' + (out.message || 'unknown'));
-    }
-  };
-  document.getElementById('btnRecover').onclick = async () => {
-    msg('…');
-    const recovery = document.getElementById('inpRecovery').value.trim();
-    const r = await fetch('/api/session-recover', {
-      method:'POST', headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ recovery })
-    });
-    const out = await r.json();
-    msg(out.ok ? 'Recovered. You are logged in.' : ('Failed: ' + (out.message || 'unknown')));
-  };
-
-  // Add point
   document.getElementById('btnAdd').onclick = async () => {
     if (!selectedHex) return;
-    const value = parseFloat(document.getElementById('valInput').value);
+    const value = Number(document.getElementById('valInput').value);
     if (!Number.isFinite(value)) { alert('Enter a numeric value'); return; }
     const r = await fetch('/api/points-insert', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json' },
+      method:'POST', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ cell: selectedHex, value })
     });
     const out = await r.json();
-    if (out.ok) {
-      document.getElementById('status').textContent = 'Inserted.';
-      await loadPoints();
-    } else {
-      document.getElementById('status').textContent = 'Insert failed: ' + (out.message || 'unknown');
-    }
+    if (out.ok) { set('status','Inserted'); await loadPoints(); } else { set('status', 'Insert failed: '+(out.message||'unknown')); }
   };
+
+  async function loadPoints() {
+    try {
+      const r = await fetch('/api/points-list'); const out = await r.json();
+      group.clearLayers();
+      if (!out.ok) { set('status','Load error: '+(out.message||'unknown')); return; }
+      (out.items||[]).forEach(p => group.addLayer(hexPoly(p.h3)));
+    } catch(e) { set('status','Load error: '+e.message); }
+  }
 
   await loadPoints();
 })();
