@@ -193,7 +193,7 @@ async function handleAdminSeed(req,res){
 }
 
 // ---- Passkey auth handlers ----
-async function handleRegStart(req,res){
+async function (req,res){
   if (req.method!=='POST') { res.setHeader('Allow','POST'); return res.status(405).end(); }
   const { handle='user' } = await getJSON(req);
   const rpID = process.env.RP_ID; const rpName = process.env.RP_NAME || 'App';
@@ -404,7 +404,13 @@ async function handleAnnList(req,res,url){
   }
   return res.status(200).json({ type:'FeatureCollection', features });
 }
-
+// helper to parse op from query or subpath
+function getOp(url, path, base) {
+  const opFromQuery = url.searchParams.get('op');
+  if (opFromQuery) return opFromQuery;
+  const parts = path.split('/'); // e.g. "auth/reg-start"
+  return parts[0] === base && parts[1] ? parts[1] : null;
+}
 // ---------- main router ----------
 export default async function handler(req, res) {
   const { url, path } = parsePath(req);
@@ -419,24 +425,61 @@ export default async function handler(req, res) {
     if (path === 'health' && req.method === 'GET') return handleHealth(req, res);
     if (path === 'k' && req.method === 'GET') return handleK(req, res);
     // auth
-    if (path === 'auth/reg-start') return handleRegStart(req,res);
-    if (path === 'auth/reg-finish') return handleRegFinish(req,res);
-    if (path === 'auth/login-start') return handleLoginStart(req,res);
-    if (path === 'auth/login-finish') return handleLoginFinish(req,res);
+  if (path === 'auth' || path.startsWith('auth/')) {
+      if (req.method !== 'POST') { res.setHeader('Allow','POST'); return res.status(405).end(); }
+      const op = getOp(url, path, 'auth');
+      if (op === 'reg-start')   return handleRegStart(req, res);
+      if (op === 'reg-finish')  return handleRegFinish(req, res);
+      if (op === 'login-start') return handleLoginStart(req, res);
+      if (op === 'login-finish')return handleLoginFinish(req, res);
+      return res.status(400).json({ message: 'Unknown auth op' });
+    }
 
-    // me
-    if (path === 'me' && req.method==='GET') return handleMe(req,res);
-    if (path === 'me/upsert-zone') return handleUpsertZone(req,res);
+    // ---------- ANN unified (list/create/vote) ----------
+    // GET /api/ann?bbox=...&z=...&kind=...        -> list
+    // POST /api/ann?op=create  body:{cell_h3,...} -> create
+    // POST /api/ann?op=vote    body:{id,value}    -> vote
+    // Back-compat: /api/ann/create, /api/ann/vote
+    if (path === 'ann' || path.startsWith('ann/')) {
+      if (req.method === 'GET')  return handleAnnList(req, res, url);
+      if (req.method === 'POST') {
+        const op = getOp(url, path, 'ann') || 'create';
+        if (op === 'vote')   return handleAnnVote(req, res);
+        if (op === 'create') return handleAnnCreate(req, res);
+        return res.status(400).json({ message: 'Unknown ann op' });
+      }
+      res.setHeader('Allow','GET, POST'); return res.status(405).end();
+    }
+   
+    // me (profile/membership)
+    if (path === 'me' && req.method === 'GET') return handleMe(req, res);
+    if (path === 'me/upsert-zone') return handleUpsertZone(req, res);
 
-    // inbox & chat
-    if (path === 'inbox/list' && req.method==='GET') return handleInboxList(req,res);
-    if (path === 'chat/fetch' && req.method==='GET') return handleChatFetch(req,res);
-    if (path === 'chat/post') return handleChatPost(req,res);
+   // ---------- CHAT unified (fetch/post) ----------
+    // GET  /api/chat                 -> fetch
+    // POST /api/chat body:{text:""}  -> post
+    // (Back-compat: /api/chat/fetch, /api/chat/post)
+    if (path === 'chat' || path.startsWith('chat/')) {
+      if (req.method === 'GET')  return handleChatFetch(req, res);
+      if (req.method === 'POST') return handleChatPost(req, res);
+      res.setHeader('Allow','GET, POST'); return res.status(405).end();
+    }
 
-    // annotations
-    if (path === 'ann/create') return handleAnnCreate(req,res);
-    if (path === 'ann/vote') return handleAnnVote(req,res);
-    if (path === 'ann/list' && req.method==='GET') return handleAnnList(req,res,url);
+// ---------- ANN unified (list/create/vote) ----------
+    // GET /api/ann?bbox=...&z=...&kind=...        -> list
+    // POST /api/ann?op=create  body:{cell_h3,...} -> create
+    // POST /api/ann?op=vote    body:{id,value}    -> vote
+    // Back-compat: /api/ann/create, /api/ann/vote
+    if (path === 'ann' || path.startsWith('ann/')) {
+      if (req.method === 'GET')  return handleAnnList(req, res, url);
+      if (req.method === 'POST') {
+        const op = getOp(url, path, 'ann') || 'create';
+        if (op === 'vote')   return handleAnnVote(req, res);
+        if (op === 'create') return handleAnnCreate(req, res);
+        return res.status(400).json({ message: 'Unknown ann op' });
+      }
+      res.setHeader('Allow','GET, POST'); return res.status(405).end();
+    }
 
     // fallback
     return res.status(404).json({ message: 'Not found', path });
