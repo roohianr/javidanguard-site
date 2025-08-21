@@ -154,6 +154,36 @@
       map.getSource('agg')?.setData(test);
       dbg('icons: 1 (test)');
     };
+     // Always include credentials so your session cookie is sent
+  async function fetchAnnotations(bbox, z, kind='') {
+    const qs = new URLSearchParams({ bbox, z: String(z) });
+    if (kind) qs.set('kind', kind);
+    const r = await fetch('/api/ann?' + qs.toString(), { credentials:'include' });
+    if (!r.ok) throw new Error('ann list ' + r.status);
+    return r.json(); // GeoJSON FeatureCollection
+  }
+
+  async function createAnnotation(cell_h3, kind, title='', details='') {
+    const r = await fetch('/api/ann?op=create', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body: JSON.stringify({ cell_h3, kind, title, details })
+    });
+    if (!r.ok) throw new Error('ann create ' + r.status);
+    return r.json(); // { ok:true }
+  }
+
+  async function voteAnnotation(id, value) {
+    const r = await fetch('/api/ann?op=vote', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body: JSON.stringify({ id, value }) // value = 1 or -1
+    });
+    if (!r.ok) throw new Error('ann vote ' + r.status);
+    return r.json(); // { ok:true, up, down }
+  }
 
     // Search
     document.getElementById('goto').onclick = () => {
