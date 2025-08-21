@@ -1,6 +1,7 @@
 // api/[...route].js
 import { createClient } from '@supabase/supabase-js';
 import * as h3 from 'h3-js';
+import { makeToken, hashToken, setCookie, getCookie } from './_lib/session.js';
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
