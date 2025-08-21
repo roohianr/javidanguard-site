@@ -1,11 +1,9 @@
 (async function () {
   // Wait for DOM
   await new Promise(r => (document.readyState === 'complete' ? r() : window.addEventListener('load', r)));
-
-  // Helper to show small messages
   const set = (id, t) => (document.getElementById(id).textContent = t || '');
 
-  // Bind auth buttons immediately (even if map fails)
+  // --- Auth buttons ---
   document.getElementById('btnCreate').onclick = async () => {
     set('authMsg', '…');
     try {
@@ -34,15 +32,12 @@
     } catch (e) { set('authMsg', 'Failed: ' + e.message); }
   };
 
-  // If Leaflet or h3 failed to load, stop here but auth still works
-  if (!window.L || !window.h3) { set('status','Map libs not loaded.'); return; }
+  // If libs didn’t load, stop here (auth still works)
+  if (!window.L || !window.h3) { set('status','Map libs not loaded'); return; }
 
-  // --- MAP ---
+  // --- Map ---
   const map = L.map('map', { doubleClickZoom:false }).setView([32.4279, 53.6880], 5);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap'
-  }).addTo(map);
-
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
   const group = L.layerGroup().addTo(map);
   const H3_RES = 7;
   let selectedHex = null;
@@ -70,12 +65,14 @@
       body: JSON.stringify({ cell: selectedHex, value })
     });
     const out = await r.json();
-    if (out.ok) { set('status','Inserted'); await loadPoints(); } else { set('status', 'Insert failed: '+(out.message||'unknown')); }
+    if (out.ok) { set('status','Inserted'); await loadPoints(); }
+    else { set('status', 'Insert failed: '+(out.message||'unknown')); }
   };
 
   async function loadPoints() {
     try {
-      const r = await fetch('/api/points-list'); const out = await r.json();
+      const r = await fetch('/api/points-list');
+      const out = await r.json();
       group.clearLayers();
       if (!out.ok) { set('status','Load error: '+(out.message||'unknown')); return; }
       (out.items||[]).forEach(p => group.addLayer(hexPoly(p.h3)));
