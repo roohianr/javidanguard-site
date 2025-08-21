@@ -124,23 +124,22 @@ async function loadInbox(){
   }catch(e){ msg(q('#inbox'), '<div class=small>بارگذاری نشد.</div>'); }
 }
 
-async function loadChat(){
-  try{
-    const r = await api('/api/chat/fetch');
-    const el = q('#chat');
-    el.innerHTML = r.items.map(i => `<div class=small><b>•</b> ${i.text} <span style="opacity:.6">${i.created_at.slice(11,16)}</span></div>`).join('');
-    el.scrollTop = el.scrollHeight;
-  }catch(e){ q('#chat').textContent='—'; }
-}
-async function sendChat(){
-  const t = q('#chatText').value.trim();
-  if(!t) return;
-  q('#chatText').value='';
-  try{
-    await api('/api/chat/post',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
-    loadChat();
-  }catch(e){ alert('ارسال نشد.'); }
-}
+async function fetchChat() {
+    const r = await fetch('/api/chat', { credentials:'include' });
+    if (!r.ok) throw new Error('chat fetch ' + r.status);
+    return r.json(); // { h3r7, items:[{user_id,text,created_at}, ...] }
+  }
+
+  async function postChat(text) {
+    const r = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body: JSON.stringify({ text })
+    });
+    if (!r.ok) throw new Error('chat post ' + r.status);
+    return r.json(); // { ok:true }
+  }
 
 q('#setZone').onclick = setZone;
 q('#sendChat').onclick = sendChat;
