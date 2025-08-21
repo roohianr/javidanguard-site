@@ -610,6 +610,8 @@ async function handleAnnList(req, res, url) {
 // ---------- main router ----------
 export default async function handler(req, res) {
   const { url, path } = parsePath(req);
+  const slug = (req.query?.route || []);
+
 
   try {
     // public/admin map APIs
@@ -679,7 +681,13 @@ if (req.method === 'GET' && slug === 'health-db') {
   }
 }
 
-
+ res.status(200).json({
+    ok: true,
+    method: req.method,
+    slug,                // <-- what we matched
+    url: req.url,        // <-- full URL
+    note: "If slug[0] !== 'health-db', your branch won't match."
+  });
     // fallback
     return res.status(404).json({ message: 'Not found', path });
   } catch (e) {
