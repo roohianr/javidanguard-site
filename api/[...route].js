@@ -208,6 +208,29 @@ async function (req,res){
   setCookie(res,'whandle', encodeURIComponent(handle), { MaxAge:300, HttpOnly:false });
   return res.status(200).json({ origin, options: opts });
 }
+async function handleRegStart(req, res) {
+  if (req.method !== 'POST') { res.setHeader('Allow','POST'); return res.status(405).end(); }
+
+  const { handle = 'user' } = await getJSON(req);
+  const rpID   = process.env.RP_ID;                   // e.g. javidanguard.com
+  const rpName = process.env.RP_NAME || 'App';
+
+  const userID = randomBytes(16).toString('base64url'); // REQUIRED by the lib
+  const opts = await generateRegistrationOptions({
+    rpName,
+    rpID,
+    userID,                  // <— add this
+    userName: handle,
+    timeout: 60000,
+    attestationType: 'none',
+    authenticatorSelection: { residentKey: 'preferred', userVerification: 'preferred' },
+  });
+
+  setCookie(res, 'wchal',  opts.challenge,               { MaxAge: 300 });
+  setCookie(res, 'whandle', encodeURIComponent(handle),  { MaxAge: 300, HttpOnly: false });
+
+  return res.status(200).json({ origin: `https://${rpID}`, options: opts });
+}
 async function handleRegFinish(req,res){
   if (req.method!=='POST') { res.setHeader('Allow','POST'); return res.status(405).end(); }
   const rpID = process.env.RP_ID; const origin = `https://${rpID}`;
