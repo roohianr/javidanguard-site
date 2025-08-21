@@ -29,22 +29,36 @@ button{cursor:pointer}
   document.getElementById('login').onclick = () => doLogin();
 
   // Register
-  async function doRegister(handle) {
-    const start = await fetch('/api/auth/reg-start', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ handle })
-    }).then(r=>r.json());
+// reg-start
+const start = await fetch('/api/auth?op=reg-start', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include',
+  body: JSON.stringify({ handle })
+}).then(r => r.json());
 
-    const att = await startRegistration(start.options);
+// reg-finish
+const done = await fetch('/api/auth?op=reg-finish', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include',
+  body: JSON.stringify(att)
+}).then(r => r.json());
 
-    const done = await fetch('/api/auth/reg-finish', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(att)
-    }).then(r=>r.json());
+// login-start
+const s = await fetch('/api/auth?op=login-start', {
+  method: 'POST',
+  credentials: 'include'
+}).then(r => r.json());
 
-    if (done.ok) location.href = '/user/';
-    else alert(done.message || 'Registration failed');
-  }
+// login-finish
+const ok = await fetch('/api/auth?op=login-finish', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include',
+  body: JSON.stringify(ass)
+}).then(r => r.json());
+
 
   // Login
   async function doLogin() {
