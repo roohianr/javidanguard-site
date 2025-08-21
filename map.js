@@ -1,9 +1,64 @@
+// map.js
 (async function () {
   // Wait for DOM
   await new Promise(r => (document.readyState === 'complete' ? r() : window.addEventListener('load', r)));
-  const set = (id, t) => (document.getElementById(id).textContent = t || '');
 
-  // --- Auth buttons ---
+  const set = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t || ''; };
+
+  // --- dynamic loader with fallbacks ---
+  function loadScriptOnce(urls, globalKey) {
+    return new Promise(async (resolve, reject) => {
+      let lastErr;
+      for (const url of urls) {
+        if (window[globalKey]) return resolve(window[globalKey]);
+        try {
+          await new Promise((res, rej) => {
+            const s = document.createElement('script');
+            s.src = url; s.async = true; s.defer = true;
+            s.onload = () => res();
+            s.onerror = (e) => rej(new Error('Failed: ' + url));
+            document.head.appendChild(s);
+          });
+          if (window[globalKey]) return resolve(window[globalKey]);
+        } catch (e) { lastErr = e; }
+      }
+      reject(lastErr || new Error(`Failed to load ${globalKey}`));
+    });
+  }
+
+  function loadCssOnce(urls) {
+    for (const url of urls) {
+      if ([...document.styleSheets].some(ss => (ss.href || '').includes('leaflet.css'))) return;
+      const l = document.createElement('link');
+      l.rel = 'stylesheet'; l.href = url;
+      document.head.appendChild(l);
+    }
+  }
+
+  // Load Leaflet CSS first
+  loadCssOnce([
+    'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+    'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css'
+  ]);
+
+  // Load Leaflet + h3 with fallback CDNs
+  try {
+    await loadScriptOnce([
+      'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+      'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js'
+    ], 'L');
+
+    await loadScriptOnce([
+      'https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.min.js',
+      'https://cdn.jsdelivr.net/npm/h3-js@4.1.0/dist/h3-js.umd.min.js'
+    ], 'h3');
+  } catch (e) {
+    set('status', 'Map libs failed to load');
+    console.error(e);
+    return;
+  }
+
+  // --- Auth buttons (unchanged) ---
   document.getElementById('btnCreate').onclick = async () => {
     set('authMsg', '…');
     try {
@@ -31,9 +86,6 @@
       set('authMsg', out.ok ? 'Recovered. You are logged in.' : ('Failed: ' + (out.message || 'unknown')));
     } catch (e) { set('authMsg', 'Failed: ' + e.message); }
   };
-
-  // If libs didn’t load, stop here (auth still works)
-  if (!window.L || !window.h3) { set('status','Map libs not loaded'); return; }
 
   // --- Map ---
   const map = L.map('map', { doubleClickZoom:false }).setView([32.4279, 53.6880], 5);
