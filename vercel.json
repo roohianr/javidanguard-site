@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/[...route].js" },
+    { "src": "^/map$",   "dest": "/map/"   },
+    { "src": "^/auth$",  "dest": "/auth/"  },
+    { "src": "^/user$",  "dest": "/user/"  },
+    { "src": "^/admin$", "dest": "/admin/" },
+    { "src": "/(.*)",    "dest": "/$1" }
+  ]
+}
