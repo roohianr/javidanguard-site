@@ -23,12 +23,13 @@ export default async function handler(req,res){
       .select('id').eq('recovery_hash',recovery_hash).single();
     if(error||!user) return send(res,401,{ok:false,message:'Invalid recovery'});
 
-    // new session (write token_hash)
+    // new session
     const sid = crypto.randomUUID();
     const token_hash = crypto.createHash('sha256').update(sid).digest('hex');
+    const expires_at = new Date(Date.now() + 30*24*60*60*1000).toISOString();
 
     const { error:serr }=await db.from('sessions')
-      .insert({ sid, token_hash, user_id:user.id });
+      .insert({ sid, token_hash, user_id:user.id, expires_at });
     if(serr) return send(res,500,{ok:false,message:serr.message});
 
     const cookie=`sid=${sid}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`;
