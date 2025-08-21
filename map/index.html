@@ -53,6 +53,12 @@
   <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
   <script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js"></script>
   <script>
+    (async () => {
+    try {
+      const r = await fetch('/api/me', { credentials: 'include' });
+      if (!r.ok) location.replace('/auth/');
+    } catch { location.replace('/auth/'); }
+  })();
     const dbg = (t)=>{ const el=document.getElementById('dbg'); el.textContent=t; console.log('[DBG]',t); };
     const H3 = window.h3 || window.h3core;
 
