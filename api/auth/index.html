@@ -1,0 +1,40 @@
+<script src="https://unpkg.com/@simplewebauthn/browser@13.1.2/dist/bundle/index.umd.min.js"></script>
+<script>
+  const { startRegistration, startAuthentication } = window.SimpleWebAuthnBrowser;
+
+  document.getElementById('reg').onclick = async () => {
+    const handle = document.getElementById('handle').value || 'user';
+    // Start registration
+    const start = await fetch('/api/auth?op=reg-start', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ handle })
+    }).then(r=>r.json());
+
+    // Browser passkey ceremony
+    const att = await startRegistration(start.options);
+
+    // Finish registration
+    const done = await fetch('/api/auth?op=reg-finish', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(att)
+    }).then(r=>r.json());
+
+    if (done.ok) location.href = '/user/';
+    else alert(done.message || 'Registration failed');
+  };
+
+  document.getElementById('login').onclick = async () => {
+    // Start login
+    const s = await fetch('/api/auth?op=login-start', { method:'POST' }).then(r=>r.json());
+    // Browser passkey ceremony
+    const ass = await startAuthentication(s.options);
+    // Finish login
+    const done = await fetch('/api/auth?op=login-finish', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(ass)
+    }).then(r=>r.json());
+
+    if (done.ok) location.href = '/user/';
+    else alert(done.message || 'Login failed');
+  };
+</script>
