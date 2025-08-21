@@ -237,6 +237,14 @@ async function handleRegFinish(req,res){
   const expectedChallenge = getCookie(req,'wchal');
   const handle = decodeURIComponent(getCookie(req,'whandle') || 'user');
   const client = sb();
+  const start = await fetch('/api/auth?op=reg-start', { ... }).then(r=>r.json());
+const att   = await startRegistration(start.options);
+att.expectedChallenge = start.options.challenge;      // add this line
+await fetch('/api/auth?op=reg-finish', {
+  method:'POST', headers:{'Content-Type':'application/json'},
+  credentials:'include', body: JSON.stringify(att)
+});
+
   try{
     const verification = await verifyRegistrationResponse({
       response: await getJSON(req),
