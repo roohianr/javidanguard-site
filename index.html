@@ -5,21 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Javidan Guard — Map</title>
 
-  <!-- Umami (free analytics) -->
+  <!-- Umami (replace ID when ready) -->
   <script defer src="https://cloud.umami.is/script.js" data-website-id="YOUR_UMAMI_WEBSITE_ID"></script>
 
-  <!-- Leaflet -->
+  <!-- Leaflet + h3 -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- h3-js -->
   <script defer src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.min.js"></script>
 
   <style>
-    html, body { height: 100%; margin: 0; }
+    html, body { height:100%; margin:0; }
     #app { display:flex; height:100%; }
     #map { flex:1; }
-    #panel { width: 320px; max-width: 90vw; padding: 12px; border-left: 1px solid #ddd; font-family: system-ui, sans-serif; }
+    #panel { width: 320px; max-width: 90vw; padding: 12px; border-left: 1px solid #ddd; font: 14px system-ui, sans-serif; }
     button, input { padding: 8px; margin: 6px 0; width: 100%; }
     .recovery { word-break: break-word; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
     .muted { color:#666; font-size: 12px; }
@@ -31,17 +29,14 @@
     <div id="panel">
       <h3>Private Login</h3>
       <div id="auth">
-        <button id="btnCreate">Create private account</button>
+        <button id="btnCreate" type="button">Create private account</button>
         <div id="created" style="display:none">
           <div class="muted">Save this recovery phrase to login on another device:</div>
           <div id="recovery" class="recovery"></div>
         </div>
-
         <hr/>
-        <div>
-          <input id="inpRecovery" placeholder="Paste your recovery phrase" />
-          <button id="btnRecover">Recover account</button>
-        </div>
+        <input id="inpRecovery" placeholder="Paste your recovery phrase" />
+        <button id="btnRecover" type="button">Recover account</button>
         <div id="authMsg" class="muted"></div>
       </div>
 
@@ -49,7 +44,7 @@
       <h3>Add a point</h3>
       <div class="muted">Click the map to select a hex. Then set a value.</div>
       <input id="valInput" type="number" step="0.01" placeholder="Value (e.g. 1.0)" />
-      <button id="btnAdd" disabled>Add to selected hex</button>
+      <button id="btnAdd" type="button" disabled>Add to selected hex</button>
       <div id="status" class="muted"></div>
     </div>
   </div>
