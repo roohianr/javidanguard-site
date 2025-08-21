@@ -7,7 +7,9 @@ function send(res, status, obj, cookie){ if(res.writableEnded)return; if(cookie)
 
 export default async function handler(req,res){
   try{
-    if(req.method!=='POST') return send(res,405,{ok:false,message:'Method not allowed'});
+    if(!(req.method === 'POST' || req.method === 'GET'))
+      return send(res,405,{ok:false,message:'Method not allowed'});
+
     const chunk=()=>crypto.randomBytes(16).toString('base64url').slice(0,22);
     const recovery=`${chunk()}-${chunk()}`;
     const recovery_hash=crypto.createHash('sha256').update(recovery).digest('hex');
