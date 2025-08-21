@@ -1,15 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+const db = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
-export default async function handler(_req, res) {
+function send(res, status, obj) {
+  if (res.writableEnded) return;
+  res.status(status);
+  res.setHeader('Content-Type', 'application/json');
+  res.end(JSON.stringify(obj));
+}
+
+export default async function handler(req, res) {
   try {
-    const { error } = await supabase.from('points').select('id').limit(1);
-    if (error) {
-      return res.status(500).json({ ok:false, where:'supabase-select', message:error.message, details:error });
-    }
-    return res.status(200).json({ ok:true, db:'ok' });
+    if (req.method !== 'GET') return send(res, 405, { ok:false, message:'Method not allowed' });
+    const { error } = await db.from('points').select('id').limit(1);
+    if (error) return send(res, 500, { ok:false, where:'supabase-select', message:error.message });
+    return send(res, 200, { ok:true, db:'ok' });
   } catch (e) {
-    return res.status(500).json({ ok:false, where:'api', message:e.message });
+    return send(res, 500, { ok:false, where:'api', message:e?.message || 'unknown' });
   }
 }
