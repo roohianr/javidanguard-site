@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+
 const db = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
 function send(res, status, obj, cookie){ if(res.writableEnded)return; if(cookie)res.setHeader('Set-Cookie',cookie);
@@ -10,15 +11,22 @@ export default async function handler(req,res){
     if(!(req.method === 'POST' || req.method === 'GET'))
       return send(res,405,{ok:false,message:'Method not allowed'});
 
+    // recovery phrase
     const chunk=()=>crypto.randomBytes(16).toString('base64url').slice(0,22);
     const recovery=`${chunk()}-${chunk()}`;
     const recovery_hash=crypto.createHash('sha256').update(recovery).digest('hex');
 
-    const { data:user, error:uerr }=await db.from('users').insert({ recovery_hash }).select('id').single();
+    // create user
+    const { data:user, error:uerr }=await db.from('users')
+      .insert({ recovery_hash }).select('id').single();
     if(uerr) return send(res,500,{ok:false,message:uerr.message});
 
-    const sid=crypto.randomUUID();
-    const { error:serr }=await db.from('sessions').insert({ sid, user_id:user.id });
+    // create session (include token_hash to satisfy NOT NULL)
+    const sid = crypto.randomUUID();
+    const token_hash = crypto.createHash('sha256').update(sid).digest('hex');
+
+    const { error:serr }=await db.from('sessions')
+      .insert({ sid, token_hash, user_id:user.id });
     if(serr) return send(res,500,{ok:false,message:serr.message});
 
     const cookie=`sid=${sid}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`;
