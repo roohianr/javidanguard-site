@@ -15,6 +15,7 @@ const BUCKET_MID = [1, 3, 8, 15, 25];
 const DEFAULT_K = 20;
 const K = Math.max(1, Number(process.env.K_THRESHOLD || DEFAULT_K));
 const NOISE_B = Number(process.env.NOISE_B || 0);
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
 // ---------- utils ----------
 function laplace(b) {
@@ -659,6 +660,25 @@ export default async function handler(req, res) {
     // ME / MEMBERSHIP
     if (path === 'me' && req.method === 'GET') return handleMe(req, res);
     if (path === 'me/upsert-zone') return handleUpsertZone(req, res);
+    const slug = (req.query?.route || [])[0] || '';
+
+if (req.method === 'GET' && slug === 'health-db') {
+  try {
+    const { error } = await supabase.from('points').select('id').limit(1);
+    if (error) {
+      return res.status(500).json({
+        ok: false,
+        where: 'supabase-select',
+        message: error.message,
+        details: error
+      });
+    }
+    return res.status(200).json({ ok: true, db: 'ok' });
+  } catch (e) {
+    return res.status(500).json({ ok: false, where: 'api', message: e.message });
+  }
+}
+
 
     // fallback
     return res.status(404).json({ message: 'Not found', path });
