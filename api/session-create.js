@@ -1,36 +1,33 @@
-import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { db, send, sessionUser, sessionCookie } from './_util.js';
 
-const db = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+export default async function handler(req, res) {
+  try {
+    if (!(req.method === 'POST' || req.method === 'GET')) {
+      return send(res, 405, { ok: false, message: 'Method not allowed' });
+    }
+    const existingUid = await sessionUser(req);
+    if (existingUid) {
+      return send(res, 200, { ok: true, already: true, message: 'Already logged in' });
+    }
+    const chunk = () => crypto.randomBytes(16).toString('base64url').slice(0, 22);
+    const recovery = `${chunk()}-${chunk()}`;
+    const recovery_hash = crypto.createHash('sha256').update(recovery).digest('hex');
 
-function send(res, status, obj, cookie){ if(res.writableEnded)return; if(cookie)res.setHeader('Set-Cookie',cookie);
-  res.status(status); res.setHeader('Content-Type','application/json'); res.end(JSON.stringify(obj)); }
+    const { data: user, error: uerr } = await db
+      .from('users').insert({ recovery_hash }).select('id').single();
+    if (uerr) return send(res, 500, { ok: false, message: uerr.message });
 
-export default async function handler(req,res){
-  try{
-    if(!(req.method === 'POST' || req.method === 'GET'))
-      return send(res,405,{ok:false,message:'Method not allowed'});
-
-    // recovery phrase
-    const chunk=()=>crypto.randomBytes(16).toString('base64url').slice(0,22);
-    const recovery=`${chunk()}-${chunk()}`;
-    const recovery_hash=crypto.createHash('sha256').update(recovery).digest('hex');
-
-    // create user
-    const { data:user, error:uerr }=await db.from('users')
-      .insert({ recovery_hash }).select('id').single();
-    if(uerr) return send(res,500,{ok:false,message:uerr.message});
-
-    // create session
     const sid = crypto.randomUUID();
     const token_hash = crypto.createHash('sha256').update(sid).digest('hex');
-    const expires_at = new Date(Date.now() + 30*24*60*60*1000).toISOString(); // 30d
+    const expires_at = new Date(Date.now() + 30*24*60*60*1000).toISOString();
 
-    const { error:serr }=await db.from('sessions')
-      .insert({ sid, token_hash, user_id:user.id, expires_at });
-    if(serr) return send(res,500,{ok:false,message:serr.message});
+    const { error: serr } = await db
+      .from('sessions').insert({ sid, token_hash, user_id: user.id, expires_at });
+    if (serr) return send(res, 500, { ok: false, message: serr.message });
 
-    const cookie=`sid=${sid}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`;
-    return send(res,200,{ok:true,recovery},cookie);
-  }catch(e){ return send(res,500,{ok:false,message:e?.message||'unknown'}); }
+    return send(res, 200, { ok: true, recovery }, sessionCookie(sid));
+  } catch (e) {
+    return send(res, 500, { ok: false, message: e?.message || 'unknown' });
+  }
 }
