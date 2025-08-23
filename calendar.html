@@ -9,36 +9,30 @@
 <link rel="stylesheet" href="/css/components.css">
 <style>
   .topbar{display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:14px}
-  .controls{display:flex; flex-wrap:wrap; gap:10px; align-items:center}
-  .controls input,.controls button{
-    background:#0a1221; color:var(--text); border:1px solid rgba(255,255,255,.1);
-    padding:10px 12px; border-radius:10px;
-  }
-  .controls button.primary{background:linear-gradient(90deg,var(--accent1),var(--accent2)); color:#00111a; border:none; font-weight:700}
-
+  .controls{display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end}
+  .field{display:flex; flex-direction:column; gap:6px}
+  .label{font-size:12px; color:var(--muted)}
+  .mini{width:90px; background:#0a1221; color:var(--text); border:1px solid rgba(255,255,255,.1); padding:10px 12px; border-radius:10px}
+  .mini::-webkit-outer-spin-button,.mini::-webkit-inner-spin-button{ -webkit-appearance: none; margin: 0 }
+  .btn{background:#0a1221; color:var(--text); border:1px solid rgba(255,255,255,.1); padding:10px 14px; border-radius:10px; font-weight:700}
+  .btn.primary{background:linear-gradient(90deg,var(--accent1),var(--accent2)); color:#00111a; border:none}
   .legend{display:flex; gap:12px; align-items:center; color:var(--muted); font-size:13px}
 
-  .canvas{
-    width:100%; background:rgba(255,255,255,.04);
-    border:1px solid rgba(255,255,255,.08); border-radius:16px;
-    padding:16px; box-shadow:var(--shadow-md)
-  }
+  .canvas{width:100%; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:16px; box-shadow:var(--shadow-md)}
   .grid{
-    --cols:52;
-    --gap:2px;
+    --cols:52; --gap:2px;
     display:grid; grid-template-columns:repeat(var(--cols), 1fr);
     gap:var(--gap); background:rgba(255,255,255,.06); padding:var(--gap); border-radius:10px;
   }
   .cell{
     aspect-ratio:1/1; background:rgba(255,255,255,.02);
-    border:1px solid rgba(255,255,255,.06); border-radius:3px;
-    position:relative;
+    border:1px solid rgba(255,255,255,.06); border-radius:3px; position:relative;
   }
-  /* past weeks = filled red */
-  .cell.past{ background:#ef4444; border-color:#b91c1c } /* red-500 / red-700 */
-  /* show icons ONLY on past cells */
-  .cell.past.sun::after{ content:"☀️"; position:absolute; inset:0; font-size:10px; display:grid; place-items:center; }
-  .cell.past.poop::after{ content:"💩"; position:absolute; inset:0; font-size:10px; display:grid; place-items:center; }
+  /* PAST = filled red; FUTURE = empty */
+  .cell.past{ background:#ef4444; border-color:#b91c1c }
+  /* icons only on past cells */
+  .cell.past.sun::after{ content:"☀️"; position:absolute; inset:0; font-size:10px; display:grid; place-items:center }
+  .cell.past.poop::after{ content:"💩"; position:absolute; inset:0; font-size:10px; display:grid; place-items:center }
 
   .meta{display:flex; justify-content:space-between; gap:10px; margin-top:10px; color:var(--muted); font-size:13px}
   .note{margin-top:12px; color:#cbd5e1; font-size:13px; line-height:1.75}
@@ -47,21 +41,16 @@
   @media print{
     @page{ size:A3 portrait; margin:10mm }
     body{ background:#fff; color:#000 }
-    .emblem,.user-btn,.controls .primary,.controls .calc{ display:none!important }
+    .emblem,.user-btn,.btn.primary,.btn.calc{ display:none!important }
     .canvas{ box-shadow:none; border:0; padding:0 }
     .legend,.note{ color:#111 }
-
     .grid{
       --gap:1mm;
-      gap:var(--gap);
-      padding:0;
-      /* fit width exactly to printable area */
+      gap:var(--gap); padding:0;
       grid-template-columns: repeat(52, calc((100% - 51 * var(--gap)) / 52));
     }
-    .cell{
-      border:0.2mm solid #777;
-    }
-    .cell.past{ background:#ffc5c5 !important } /* light red on paper */
+    .cell{ border:0.2mm solid #777 }
+    .cell.past{ background:#ffc5c5 !important } /* light red for paper */
   }
 </style>
 </head>
@@ -78,21 +67,33 @@
   <div class="wrap" style="justify-content:flex-start">
     <div class="title" style="margin-top:18px">
       <h1>هفته‌های به‌جا نرفته‌ی من</h1>
-      <div class="subtitle">هر هفته مهم است. این صفحه زندگی را به هفته‌ها می‌شکند.</div>
+      <div class="subtitle">هر خانه یک هفته از زندگی توست. فقط هفته‌های گذشته پر می‌شوند.</div>
     </div>
 
     <div class="canvas">
       <div class="topbar">
         <div class="controls">
-          <label for="dobj">تاریخ تولد (جلالی):</label>
-          <input id="dobj" type="text" placeholder="مثلاً 1370-05-04">
-          <label for="expect">امید به زندگی (سال):</label>
-          <input type="number" id="expect" value="78" min="40" max="120" step="1" style="width:88px">
-          <button class="calc" onclick="build()">محاسبه</button>
-          <button id="printBtn" class="primary" onclick="window.print()" hidden>پرینت A3</button>
+          <div class="field">
+            <label class="label" for="jy">سال (جلالی)</label>
+            <input id="jy" class="mini" type="number" inputmode="numeric" placeholder="1370" min="1200" max="1500">
+          </div>
+          <div class="field">
+            <label class="label" for="jm">ماه</label>
+            <input id="jm" class="mini" type="number" inputmode="numeric" placeholder="05" min="1" max="12">
+          </div>
+          <div class="field">
+            <label class="label" for="jd">روز</label>
+            <input id="jd" class="mini" type="number" inputmode="numeric" placeholder="04" min="1" max="31">
+          </div>
+          <div class="field">
+            <label class="label" for="expect">امید به زندگی (سال)</label>
+            <input id="expect" class="mini" type="number" value="78" min="40" max="120" step="1">
+          </div>
+          <button class="btn calc" onclick="build()">محاسبه</button>
+          <button id="printBtn" class="btn primary" onclick="window.print()" hidden>پرینت A3</button>
         </div>
         <div class="legend">
-          <span>☀️ قبل از ۱۲ بهمن ۱۳۵۷</span>
+          <span>☀️ قبل از ۱ بهمن ۱۳۵۷</span>
           <span>💩 بعد از آن</span>
         </div>
       </div>
@@ -104,21 +105,25 @@
         <div id="statsRight"></div>
       </div>
 
-      <p class="note">
-        تاریخ تولد را به‌صورت جلالی وارد کن (مثلاً <strong>1370-05-04</strong>). فقط هفته‌های گذشته پر می‌شوند، و
-        نماد ☀️/💩 فقط روی هفته‌های گذشته می‌آید. پرینت روی یک برگ <strong>A3</strong> انجام می‌شود.
-      </p>
+      <div class="note">
+        <strong>توضیحات:</strong>
+        <ul style="margin:6px 0 0 0; padding-right:18px">
+          <li>اگر از میانگین جلوتر بودی، نمایش تا «سن فعلی + ۵ سال» ادامه می‌یابد.</li>
+          <li>دکمهٔ پرینت پس از محاسبه فعال می‌شود و در نسخهٔ چاپی نمایش داده نمی‌شود.</li>
+          <li>مرز تاریخی نمایش: <strong>۱ بهمن ۱۳۵۷</strong> — قبل از آن ☀️، بعد از آن 💩 (فقط برای هفته‌های گذشته).</li>
+        </ul>
+      </div>
     </div>
   </div>
 
 <script>
-/* === JALALI → GREGORIAN (yyyy,mm,dd) =============================== */
+/* === JALALI → GREGORIAN ============================================ */
 function jalaliToGregorian(jy, jm, jd){
   jy = parseInt(jy,10); jm = parseInt(jm,10); jd = parseInt(jd,10);
   var gy;
   var j_day_no = 365*jy + Math.floor(jy/33)*8 + Math.floor(((jy%33)+3)/4);
-  for (var i=1; i<jm; i++) j_day_no += (i<=6)?31: (i<=11?30:29);
-  j_day_no += jd + 226899; /* 226899 = days offset to 1600-03-21; aligns with -355668 form */
+  for (var i=1; i<jm; i++) j_day_no += (i<=6)?31:(i<=11?30:29);
+  j_day_no += jd + 226899;
   gy = 1600 + 400*Math.floor(j_day_no/146097);
   j_day_no %= 146097;
   var leap = true;
@@ -136,7 +141,7 @@ function jalaliToGregorian(jy, jm, jd){
     j_day_no %= 365;
   }
   var gd = j_day_no + 1;
-  var sal_a = [0,31, (leap?29:28),31,30,31,30,31,31,30,31,30,31];
+  var sal_a = [0,31,(leap?29:28),31,30,31,30,31,31,30,31,30,31];
   var gm;
   for (gm=1; gm<=12; gm++){
     if (gd <= sal_a[gm]) break;
@@ -149,38 +154,31 @@ function j2gDate(jy, jm, jd){
   return new Date(Date.UTC(gy, gm-1, gd));
 }
 
-/* Revolution boundary: 12 Bahman 1357 (Jalali) */
-const REVOLUTION = j2gDate(1357, 11, 12);
+/* Revolution boundary: ۱ بهمن ۱۳۵۷ (Jalali month 11) */
+const REVOLUTION = j2gDate(1357, 11, 1);
 
 const gridEl = document.getElementById('grid');
 const printBtn = document.getElementById('printBtn');
 const statsLeft = document.getElementById('statsLeft');
 const statsRight = document.getElementById('statsRight');
 
-function weeksBetween(a,b){
-  const ms = b - a;
-  return Math.floor(ms / (1000*60*60*24*7));
-}
-function addWeeks(date, w){
-  const d = new Date(date);
-  d.setUTCDate(d.getUTCDate() + w*7);
-  return d;
-}
-function parseJalaliInput(txt){
-  const m = String(txt||'').trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-  if(!m) return null;
-  const jy = +m[1], jm = +m[2], jd = +m[3];
-  if(jm<1||jm>12||jd<1||jd>31) return null;
-  return j2gDate(jy, jm, jd);
-}
+function weeksBetween(a,b){ return Math.floor((b - a) / (1000*60*60*24*7)); }
+function addWeeks(date, w){ const d = new Date(date); d.setUTCDate(d.getUTCDate() + w*7); return d; }
 
 function build(){
-  const dobJ = document.getElementById('dobj').value;
-  const expect = Math.max(40, Math.min(120, Number(document.getElementById('expect').value||78)));
-  const dob = parseJalaliInput(dobJ);
-  if(!dob){ alert('تاریخ تولد جلالی را مثل 1370-05-04 وارد کن'); return; }
+  const jy = +document.getElementById('jy').value;
+  const jm = +document.getElementById('jm').value;
+  const jd = +document.getElementById('jd').value;
+  const expect = Math.max(40, Math.min(120, +document.getElementById('expect').value||78));
 
+  if(!jy || !jm || !jd || jm<1 || jm>12 || jd<1 || jd>31){
+    alert('سال/ماه/روز جلالی را درست وارد کن (مثلاً 1370 / 05 / 04).');
+    return;
+  }
+
+  const dob = j2gDate(jy, jm, jd);
   const today = new Date();
+
   const ageWeeks = Math.max(0, weeksBetween(dob, today));
   const ageYears = ageWeeks / 52;
   const displayYears = Math.max(expect, Math.ceil(ageYears + 5));
@@ -201,14 +199,19 @@ function build(){
   const left = Math.max(0, totalWeeks - ageWeeks);
   statsLeft.textContent = `هفته‌های گذشته: ${ageWeeks.toLocaleString('fa-IR')}`;
   statsRight.textContent = `هفته‌های باقی‌مانده تا ${displayYears} سال: ${left.toLocaleString('fa-IR')}`;
+
+  // remember inputs
+  localStorage.setItem('wofl-jy', String(jy));
+  localStorage.setItem('wofl-jm', String(jm).padStart(2,'0'));
+  localStorage.setItem('wofl-jd', String(jd).padStart(2,'0'));
 }
 
-/* remember last DOB (Jalali) */
+/* restore inputs */
 (function(){
-  const k='wofl-dob-j';
-  const inp=document.getElementById('dobj');
-  inp.value = localStorage.getItem(k)||'';
-  inp.addEventListener('change',()=>localStorage.setItem(k,inp.value));
+  const jy=document.getElementById('jy'), jm=document.getElementById('jm'), jd=document.getElementById('jd');
+  jy.value = localStorage.getItem('wofl-jy') || '';
+  jm.value = localStorage.getItem('wofl-jm') || '';
+  jd.value = localStorage.getItem('wofl-jd') || '';
 })();
 </script>
 </body>
