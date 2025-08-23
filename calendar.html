@@ -54,27 +54,53 @@
   .note strong{color:#e5e7eb}
 
   /* PRINT — force single A3 page with auto-scale */
-  @media print{
-    @page{ size:A3 portrait; margin:10mm }
-    body{ background:#fff; color:#000 }
-    .emblem,.user-btn,.btn.primary,.btn.calc{ display:none!important }
-    .canvas{ box-shadow:none; border:0; padding:0 }
-    .legend,.note{ color:#111 }
-    .fact{ background:#fff; border-color:#999 }
-    .fact .num{ color:#000 }
+ @media print{
+  @page{ size:A3 portrait; margin:10mm }
 
-    /* tighter grid for paper */
-    .grid{
-      --gap:1mm;
-      gap:var(--gap); padding:0;
-      grid-template-columns: repeat(52, calc((100% - 51 * var(--gap)) / 52));
-    }
-    .cell{ border:0.2mm solid #777 }
-    .cell.past{ background:#ffc5c5 !important } /* light red for paper */
+  /* Hide UI in print */
+  .topbar .controls,
+  .emblem,
+  .user-btn,
+  .btn.primary,
+  .btn.calc{ display:none !important }
 
-    /* the area we scale to fit on one sheet */
-    .print-area{ transform-origin: top left }
+  body{ background:#fff; color:#000 }
+  .canvas{ box-shadow:none; border:0; padding:0 }
+  .legend,.note{ color:#111 }
+  .fact{ background:#fff; border-color:#999 }
+  .fact .num{ color:#000 }
+
+  /* Fit EVERYTHING below into ONE A3 sheet */
+  .print-area{
+    width:277mm;              /* 297 - (2×10mm margins) */
+    max-height:400mm;         /* 420 - (2×10mm margins) */
+    overflow:hidden;
+    break-inside:avoid;
+    page-break-inside:avoid;
+    transform-origin:top left;
   }
+
+  /* Tight, fixed-mm grid so 78 rows fit */
+  .grid{
+    --gap:1mm;
+    --cell:3mm;               /* ↓ if you still see 2 pages, try 2.8mm */
+    display:grid;
+    grid-template-columns:repeat(52, var(--cell));
+    gap:var(--gap);
+    padding:0;
+    margin:4mm 0 0 0;
+  }
+  .cell{
+    width:var(--cell);
+    height:var(--cell);
+    aspect-ratio:auto !important;
+    border:0.2mm solid #777;
+  }
+  .cell.past{ background:#ffc5c5 !important } /* light red on paper */
+
+  /* Keep blocks together */
+  .facts, .meta, .note{ break-inside:avoid; page-break-inside:avoid }
+}
 </style>
 </head>
 <body>
