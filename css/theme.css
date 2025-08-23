@@ -1,24 +1,21 @@
-/* --- Font: Vazirmatn (self-hosted) --- */
 @font-face{
   font-family:"Vazirmatn";
-  src:url("/Vazirmatn/Vazirmatn-Variable.woff2") format("woff2-variations");
+  src:url("/assets/Vazirmatn/Vazirmatn-Variable.woff2") format("woff2-variations");
   font-weight:100 900;
   font-style:normal;
   font-display:swap;
 }
-/* Optional static fallbacks if you keep them */
 @font-face{
   font-family:"Vazirmatn";
-  src:url("/Vazirmatn/Vazirmatn-Regular.woff2") format("woff2");
+  src:url("/assets/Vazirmatn/Vazirmatn-Regular.woff2") format("woff2");
   font-weight:400; font-style:normal; font-display:swap;
 }
 @font-face{
   font-family:"Vazirmatn";
-  src:url("/Vazirmatn/Vazirmatn-SemiBold.woff2") format("woff2");
+  src:url("/assets/Vazirmatn/Vazirmatn-SemiBold.woff2") format("woff2");
   font-weight:600; font-style:normal; font-display:swap;
 }
 
-/* --- Design tokens (matches your calendar aesthetic) --- */
 :root{
   --bg1:#0f172a; --bg2:#1e293b;
   --text:#e5e7eb; --muted:#93a5b1;
