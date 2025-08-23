@@ -1,0 +1,74 @@
+/* Layout shell */
+.wrap{
+  max-width:1100px; margin:auto; padding:20px; min-height:100%;
+  display:flex; flex-direction:column; gap:24px; align-items:center; justify-content:center;
+}
+.title{ text-align:center; text-shadow:0 2px 12px rgba(0,0,0,.35) }
+h1{ margin:0; font-weight:800; font-size:clamp(22px, 4.6vw, 36px) }
+.subtitle{ color:var(--muted); font-size:clamp(12px, 2.8vw, 14px); margin-top:6px }
+
+/* watermark */
+.emblem{
+  position:fixed; top:18px; left:18px; width:64px; opacity:.15; pointer-events:none; filter:grayscale(100%);
+}
+
+/* top-right user button */
+.user-btn{
+  position:fixed; top:14px; right:14px; width:42px; height:42px;
+  display:grid; place-items:center; border-radius:12px;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+  backdrop-filter:blur(6px); box-shadow:0 10px 30px rgba(0,0,0,.25);
+  transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+}
+.user-btn:hover{ transform:translateY(-2px); background:rgba(255,255,255,.08); box-shadow:0 14px 40px rgba(0,0,0,.35) }
+.user-btn svg{ width:22px; height:22px; color:#e5e7eb }
+
+/* cards grid */
+.cards{
+  display:grid; gap:16px; width:100%; max-width:950px;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+}
+@media (max-width:740px){ .cards{ grid-template-columns:1fr } }
+
+/* flip cards */
+.card{ position:relative; perspective:1600px; height:240px }
+.card-inner{
+  position:absolute; inset:0; transform-style:preserve-3d;
+  transition: transform .9s cubic-bezier(.2,.7,.1,1), box-shadow .4s;
+  border-radius:var(--card-br); box-shadow:var(--shadow-md);
+}
+.card:hover .card-inner{ box-shadow:var(--shadow-lg) }
+.face{
+  position:absolute; inset:0; backface-visibility:hidden; overflow:hidden;
+  border:1px solid rgba(255,255,255,0.08); border-radius:var(--card-br);
+  background:linear-gradient(180deg, var(--card-bg1), var(--card-bg2));
+}
+.front{ display:flex; flex-direction:column; justify-content:space-between; padding:18px }
+.front h2{ margin:0; font-size:22px }
+.front p{ margin:6px 0 0; color:var(--muted); font-size:13px }
+.pill{
+  align-self:flex-start; padding:8px 12px; border-radius:12px; font-weight:700; font-size:12px;
+  background:linear-gradient(90deg, var(--accent1), var(--accent2)); color:#00111a;
+}
+.back{ transform:rotateY(180deg); padding:20px; display:flex; flex-direction:column; gap:14px }
+.back h3{ margin:0 0 4px 0; font-size:18px }
+.back p{ margin:0; color:#cbd5e1; line-height:1.75; font-size:13px }
+.actions{ margin-top:auto; display:flex; gap:10px; flex-wrap:wrap }
+.btn{
+  background:#0a1221; color:var(--text); border:1px solid rgba(255,255,255,.1);
+  padding:10px 14px; border-radius:10px; font-weight:700;
+}
+.btn.primary{ background:linear-gradient(90deg, var(--accent1), var(--accent2)); color:#00111a; border:none }
+
+/* open state */
+.card.open{ z-index:50; height:min(92vh,760px) }
+.card.open .card-inner{ transform: rotateY(180deg) scale(1.02) }
+.card.open .face{ border-radius:22px }
+.card.open .back{ padding:clamp(18px,4vw,28px) }
+
+/* float */
+.card{ transform:translateZ(0) }
+.card:not(.open) .card-inner{ transform:translateY(0) }
+.card:not(.open):hover .card-inner{ transform:translateY(-4px) }
+
+@media (prefers-reduced-motion:reduce){ .card-inner{ transition:none } }
