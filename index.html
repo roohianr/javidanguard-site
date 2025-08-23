@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ایران جاوید — صفحه نخست</title>
+  <link rel="preload" href="/Vazirmatn/Vazirmatn-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <!-- watermark -->
+  <img class="emblem" src="/assets/lion-sun.svg" alt="شیر و خورشید">
+
+  <!-- user/login button -->
+  <a class="user-btn" href="/login.html" aria-label="ورود به داشبورد">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 12c2.761 0 5-2.462 5-5.5S14.761 1 12 1 7 3.462 7 6.5 9.239 12 12 12Zm0 2c-4.97 0-9 3.582-9 8 0 .552.448 1 1 1h16c.552 0 1-.448 1-1 0-4.418-4.03-8-9-8Z" fill="currentColor"/>
+    </svg>
+  </a>
+
+  <div class="wrap">
+    <div class="title">
+      <h1>ایران جاوید</h1>
+      <div class="subtitle">دو مسیر — یکی برای دیدن زمان، یکی برای ثبت ایران. مینیمال و یکدست، با حال‌وهوای ایرانی.</div>
+    </div>
+
+    <div class="cards">
+      <!-- Calendar Card -->
+      <section class="card" id="card-calendar" aria-labelledby="cal-title">
+        <div class="card-inner">
+          <div class="face front">
+            <div>
+              <h2 id="cal-title">هفته‌های به‌جا نرفته‌ی من</h2>
+              <p>هر هفته‌ای که گذشت بازنمی‌گردد. ببین چه مانده و کجا ایستاده‌ای.</p>
+            </div>
+            <span class="pill">عمومی • بدون ورود</span>
+          </div>
+          <div class="face back" role="region" aria-label="معرفی تقویم">
+            <h3>معرفی کوتاه (جای‌نگهدار)</h3>
+            <p>اینجا متن مقالهٔ نیم‌صفحه می‌آید. فعلاً جای‌نگهدار است؛ بعداً کامل می‌کنیم.</p>
+            <div class="actions">
+              <a class="btn primary" href="/calendar.html">ورود به تقویم</a>
+              <button class="btn" data-close>بازگشت</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Map Card -->
+      <section class="card" id="card-map" aria-labelledby="map-title">
+        <div class="card-inner">
+          <div class="face front">
+            <div>
+              <h2 id="map-title">کورکور مپ</h2>
+              <p>نقشه‌ای زنده برای ایران — ثبت گروه‌ها، مردم و شهرها.</p>
+            </div>
+            <span class="pill">نیازمند ورود</span>
+          </div>
+          <div class="face back" role="region" aria-label="معرفی نقشه کورکور">
+            <h3>معرفی کوتاه (جای‌نگهدار)</h3>
+            <p>اینجا متن مقالهٔ نیم‌صفحه دربارهٔ هدف و روش کار نقشه می‌آید. فعلاً جای‌نگهدار.</p>
+            <div class="actions">
+              <a class="btn primary" href="/login.html">ورود / ثبت‌نام</a>
+              <button class="btn" data-close>بازگشت</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // flip + expand
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(card => {
+      card.addEventListener('click', (e) => {
+        const isButton = e.target.closest('a,button');
+        if(isButton) return;
+        const alreadyOpen = card.classList.contains('open');
+        document.querySelectorAll('.card.open').forEach(c=>c.classList.remove('open'));
+        if(!alreadyOpen) card.classList.add('open');
+      });
+      card.querySelectorAll('[data-close]').forEach(btn=>{
+        btn.addEventListener('click', (e)=>{ e.stopPropagation(); card.classList.remove('open'); });
+      });
+    });
+    document.addEventListener('click', (e)=>{
+      const open = document.querySelector('.card.open');
+      if(!open) return;
+      if(!open.contains(e.target)) open.classList.remove('open');
+    });
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'Escape'){ document.querySelectorAll('.card.open').forEach(c=>c.classList.remove('open')); }
+    });
+  </script>
+</body>
+</html>
