@@ -6,42 +6,64 @@
   const show = (id, on) => { const el=$(id); if(el) el.style.display = on ? '' : 'none'; };
   const disable = (id, on) => { const el=$(id); if(el) el.disabled = !!on; };
 
-  // --- Auth helpers
+  // --- session helpers (uses /api/auth/*)
   async function refreshSessionUI() {
     try {
-      const r = await fetch('/api/session-me'); const out = await r.json();
-      const logged = !!out.loggedIn; set('loginState', logged ? 'Logged in' : 'Not logged in');
-      show('btnLogout', logged); disable('btnCreate', logged);
+      const r = await fetch('/api/auth/me');
+      const out = await r.json();
+      const logged = !!out.loggedIn;
+      set('loginState', logged ? 'Logged in' : 'Not logged in');
+      show('btnLogout', logged);
+      disable('btnCreate', logged);
       disable('btnAdd', (!logged || !selectedHex));
-      return { logged, uid: out.userId || null };
-    } catch { set('loginState','Unknown'); return { logged:false, uid:null }; }
+      currentUid = out.userId || null;
+      return logged;
+    } catch {
+      set('loginState','Unknown'); return false;
+    }
   }
 
   $('btnCreate').onclick = async () => {
     set('authMsg','…');
-    const r = await fetch('/api/session-create', { method:'POST' }); const out = await r.json();
-    if (out.ok && !out.already) { $('created').style.display='block'; set('recovery', out.recovery); set('authMsg','Account created. Save the phrase.'); }
-    else if (out.ok && out.already) set('authMsg','You are already logged in.');
-    else set('authMsg','Failed: '+(out.message||'unknown'));
+    const r = await fetch('/api/auth/create', { method:'POST' });
+    const out = await r.json();
+    if (out.ok && !out.already) {
+      $('created').style.display='block';
+      set('recovery', out.recovery);
+      set('authMsg','Account created. Save the phrase.');
+    } else if (out.ok && out.already) {
+      set('authMsg','You are already logged in.');
+    } else {
+      set('authMsg','Failed: '+(out.message||'unknown'));
+    }
     await refreshSessionUI();
   };
+
   $('btnRecover').onclick = async () => {
     set('authMsg','…');
     const recovery = $('inpRecovery').value.trim();
-    const r = await fetch('/api/session-recover', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ recovery }) });
+    const r = await fetch('/api/auth/recover', {
+      method:'POST', headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ recovery })
+    });
     const out = await r.json();
     set('authMsg', out.ok ? 'Recovered. You are logged in.' : ('Failed: '+(out.message||'unknown')));
     await refreshSessionUI();
   };
-  $('btnLogout').onclick = async () => { await fetch('/api/session-logout', { method:'POST' }); set('authMsg','Logged out.'); await refreshSessionUI(); };
 
-  // --- Map libs check
+  $('btnLogout').onclick = async () => {
+    await fetch('/api/auth/logout', { method:'POST' });
+    set('authMsg','Logged out.');
+    await refreshSessionUI();
+  };
+
+  // map libs check
   if (!window.L || !window.h3) { set('status','Map libs not loaded'); return; }
 
-  // --- Map
+  // --- map setup
   const map = L.map('map', { doubleClickZoom:false }).setView([32.4279, 53.6880], 5);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
-  const groupLayer = L.layerGroup().addTo(map);
+  const layerAgg = L.layerGroup().addTo(map);
   const H3_RES = 7;
   let selectedHex = null;
   let currentArea = null;
@@ -55,19 +77,19 @@
   }
 
   function updateSel() {
-    const canAdd = (!!selectedHex) && ( $('btnLogout').style.display !== 'none' );
+    const canAdd = (!!selectedHex) && ($('btnLogout').style.display !== 'none');
     disable('btnAdd', !canAdd);
     set('status', selectedHex ? `Selected: ${selectedHex}` : '');
   }
 
   map.on('click', (e)=>{ selectedHex = h3.latLngToCell(e.latlng.lat, e.latlng.lng, H3_RES); $('areaCell').value = selectedHex; updateSel(); });
 
-  // --- Map add numeric point
+  // --- map add numeric point (uses /api/map/points-insert)
   $('btnAdd').onclick = async () => {
     if (!selectedHex) return;
     const value = Number($('valInput').value);
     if (!Number.isFinite(value)) { alert('Enter a numeric value'); return; }
-    const r = await fetch('/api/points-insert', {
+    const r = await fetch('/api/map/points-insert', {
       method:'POST', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ cell: selectedHex, value })
     });
@@ -76,13 +98,13 @@
     else { set('status','Insert failed: '+(out.message||'unknown')); }
   };
 
-  // --- Profile: set area & group size
+  // --- profile (area + group size) -> /api/user/update
   $('btnUseSelected').onclick = () => { if (selectedHex) $('areaCell').value = selectedHex; };
   $('btnSaveProfile').onclick = async () => {
     const area_h3 = $('areaCell').value.trim();
     const group_size = Number($('groupSize').value);
-    const r = await fetch('/api/user-update', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+    const r = await fetch('/api/user/update', {
+      method:'POST', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ area_h3, group_size })
     });
     const out = await r.json();
@@ -90,26 +112,27 @@
     if (out.ok) { currentArea = area_h3; await loadAggregates(); await refreshChat(); }
   };
 
-  // --- Aggregates (people per hex)
+  // --- aggregates (people per hex) -> /api/map/area-aggregate
   async function loadAggregates() {
-    groupLayer.clearLayers();
+    layerAgg.clearLayers();
     try {
-      const r = await fetch('/api/area-aggregate'); const out = await r.json();
+      const r = await fetch('/api/map/area-aggregate');
+      const out = await r.json();
       if (!out.ok) { set('status','Agg error: '+(out.message||'unknown')); return; }
       (out.items||[]).forEach(a => {
         const poly = hexPoly(a.h3, Math.min(0.7, 0.2 + (Number(a.units)||0)*0.02));
         poly.bindTooltip(`${a.h3}<br/>users: ${a.users}<br/>units: ${a.units}`);
-        groupLayer.addLayer(poly);
+        layerAgg.addLayer(poly);
       });
     } catch(e) { set('status','Agg error: '+e.message); }
   }
 
-  // --- Chat (per area)
+  // --- chat (uses /api/chat/*)
   async function refreshChat() {
     if (!currentArea || !currentUid) { $('chatList').innerHTML = ''; show('badge', false); return; }
-    // list
     try {
-      const r = await fetch(`/api/chat-list?area=${encodeURIComponent(currentArea)}&limit=100`);
+      // list
+      const r = await fetch(`/api/chat/list?area=${encodeURIComponent(currentArea)}&limit=100`);
       const out = await r.json();
       if (!out.ok) { set('chatMsg','Load failed'); return; }
       $('chatList').innerHTML = (out.items||[]).map(m => (
@@ -117,11 +140,10 @@
       )).join('');
       $('chatList').scrollTop = $('chatList').scrollHeight;
       // unread badge
-      const rx = await fetch(`/api/chat-unread?area=${encodeURIComponent(currentArea)}&uid=${encodeURIComponent(currentUid)}`);
+      const rx = await fetch(`/api/chat/unread?area=${encodeURIComponent(currentArea)}&uid=${encodeURIComponent(currentUid)}`);
       const ux = await rx.json();
       const c = Number(ux?.count||0);
-      set('badge', c.toString());
-      show('badge', c>0);
+      set('badge', String(c)); show('badge', c>0);
     } catch {}
   }
 
@@ -129,8 +151,8 @@
     if (!currentArea) { set('chatMsg','Pick & save your area first'); return; }
     const body = $('chatInput').value.trim();
     if (!body) return;
-    const r = await fetch('/api/chat-post', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+    const r = await fetch('/api/chat/post', {
+      method:'POST', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ area_h3: currentArea, body })
     });
     const out = await r.json();
@@ -140,17 +162,17 @@
 
   async function markSeen() {
     if (!currentArea) return;
-    await fetch('/api/chat-seen', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ area_h3: currentArea }) });
+    await fetch('/api/chat/seen', { method:'POST', headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ area_h3: currentArea }) });
     await refreshChat();
   }
 
-  // Initial
-  const sess = await refreshSessionUI(); currentUid = sess.uid;
+  // --- init
+  await refreshSessionUI();
   await loadAggregates();
 
-  // Selecting an area sets currentArea (via Save Profile)
   $('areaCell').addEventListener('change', () => { currentArea = $('areaCell').value.trim(); });
 
-  // Periodic unread badge refresh
+  // keep chat badge fresh
   setInterval(refreshChat, 8000);
 })();
