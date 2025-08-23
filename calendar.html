@@ -55,11 +55,13 @@
 
   /* PRINT — force single A3 page with auto-scale */
 @media print{
-  /* minimal margin, full-page feel */
-  @page{ size:A3 portrait; margin:5mm }
-  :root{ --m:5mm } /* page margin variable */
+  /* full-bleed A3 (fills the sheet) */
+  @page{ size:A3 portrait; margin:0 }
 
-  /* hide UI in print */
+  /* keep colors in print */
+  html, body, .grid, .cell{ -webkit-print-color-adjust: exact; print-color-adjust: exact }
+
+  /* hide UI controls */
   .topbar .controls,
   .emblem,
   .user-btn,
@@ -72,55 +74,56 @@
   .fact{ background:#fff; border-color:#999 }
   .fact .num{ color:#000 }
 
-  /* the printable area sized to inner A3, laid out as rows:
-     facts | (grid CENTERED) | meta | note  */
+  /* One-sheet layout: top facts (40mm) | GRID (center) | bottom (meta+note = 40mm)  */
   .print-area{
-    width: calc(297mm - 2*var(--m));
-    height: calc(420mm - 2*var(--m));
-    margin: 0;
-    display: grid;
-    grid-template-rows: auto 1fr auto auto;
-    transform-origin: top left;
-    overflow: hidden;
-    break-inside: avoid;
-    page-break-inside: avoid;
+    width:297mm; height:420mm;    /* inner page = full sheet */
+    margin:0;
+    display:grid;
+    grid-template-rows: 40mm 1fr 12mm 28mm; /* 40 top + (grid) + 12 meta + 28 note = 40 bottom */
+    overflow:hidden;
+    break-inside:avoid; page-break-inside:avoid;
   }
 
-  /* center the grid block vertically & horizontally */
-  #grid{
-    margin: auto;                 /* centers inside the 1fr row */
-  }
-
-  /* mm-true grid that FITS both width and height (uses --rows from JS) */
+  /* center grid block; compute cell from both width & height */
   .grid{
-    --gap: 0.8mm;
-    --cellW: calc((100% - 51 * var(--gap)) / 52);                  /* width-limited cell */
-    --cellH: calc((100% - (var(--rows) - 1) * var(--gap)) / var(--rows)); /* height-limited cell */
-    --cell: min(var(--cellW), var(--cellH));                       /* pick the smaller so it fits */
-    display: grid;
+    /* rows provided by JS: --rows */
+    --gap:0.8mm;
+
+    /* width cap (52 columns) */
+    --cellW: calc((100% - 51 * var(--gap)) / 52);
+
+    /* height cap (use this row's actual height) */
+    /* the grid row is 1fr (everything between the fixed 40mm top and 40mm bottom) */
+    --cellH: calc((100% - (var(--rows) - 1) * var(--gap)) / var(--rows));
+
+    /* pick the smaller to guarantee single page */
+    --cell: min(var(--cellW), var(--cellH));
+
+    display:grid !important;
     grid-template-columns: repeat(52, var(--cell));
-    gap: var(--gap);
-    padding: 0;
+    gap:var(--gap);
+    padding:0;
+    margin:auto;                 /* centers within the 1fr row (horizontal & vertical) */
   }
+
   .cell{
-    width: var(--cell);
-    height: var(--cell);
-    aspect-ratio: auto !important;
-    border: 0.2mm solid #777;
-    overflow: hidden;             /* keep emoji inside */
+    width:var(--cell); height:var(--cell); aspect-ratio:auto !important;
+    border:0.2mm solid #777;
+    overflow:hidden;
+    display:block;
   }
-  .cell.past{ background:#ffc5c5 !important }  /* soft on paper */
 
-  /* emoji size relative to cell — prevents spill at small cells */
+  /* softer red on paper */
+  .cell.past{ background:#ffc5c5 !important }
+
+  /* prevent emoji spill: no emoji in print */
   .cell.past.sun::after,
-  .cell.past.poop::after{
-    font-size: calc(var(--cell) * 0.55);
-    line-height: 1;
-  }
+  .cell.past.poop::after{ content:none !important }
 
-  /* keep blocks together */
-  .facts, .meta, .note{ break-inside: avoid; page-break-inside: avoid }
+  /* keep top/bottom blocks together */
+  .facts, .meta, .note{ break-inside:avoid; page-break-inside:avoid }
 }
+
 
 </style>
 </head>
@@ -243,8 +246,9 @@ function build(){
   const ageYears = ageWeeks / 52;
   const displayYears = Math.max(exp, Math.ceil(ageYears + 5));
   const totalWeeks = displayYears * 52;
-  const rows = Math.ceil(totalWeeks / 52);
+const rows = Math.ceil(totalWeeks / 52);
 gridEl.style.setProperty('--rows', rows);
+
 
 
   // counts under ☀️ (before boundary) and 💩 (after), only among PAST weeks
