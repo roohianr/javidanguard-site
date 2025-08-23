@@ -7,7 +7,7 @@
   <style>
     :root { color-scheme: light dark; }
     *{box-sizing:border-box}
-    body{margin:0;font:15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;background:#0b0d10;color:#e9eef5}
+    body{margin:0;font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0b0d10;color:#e9eef5}
     header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #1f2a35;background:#0f141a;position:sticky;top:0;z-index:10}
     header .brand{font-weight:700;letter-spacing:.2px}
     header .actions button{margin-left:8px}
@@ -72,49 +72,39 @@
     const txt = (el, t) => el.textContent = t || '';
     await new Promise(r => (document.readyState === 'complete' ? r() : window.addEventListener('load', r)));
 
-    // --- guard: require session
-    try{
+    // require login
+    try {
       const r = await fetch('/api/auth/me'); const out = await r.json();
       if (!out?.loggedIn) { location.href = '/login.html'; return; }
-      txt($('loginState'), 'Logged in'); 
-      window.__UID__ = out.userId;
-    }catch{ location.href = '/login.html'; return; }
+      txt($('loginState'), 'Logged in'); window.__UID__ = out.userId;
+    } catch { location.href = '/login.html'; return; }
 
-    // --- load Leaflet/h3 with fallbacks
-    function css(url){ const l=document.createElement('link'); l.rel='stylesheet'; l.href=url; document.head.appendChild(l); }
-    function script(url){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=url; s.async=true; s.defer=true; s.onload=res; s.onerror=()=>rej(new Error(url)); document.head.appendChild(s); }); }
+    // logout
+    $('btnLogout').onclick = async ()=>{ await fetch('/api/auth/logout',{method:'POST'}); location.href='/login.html'; };
+
+    // load Leaflet/h3 with fallbacks
+    function css(u){ const l=document.createElement('link'); l.rel='stylesheet'; l.href=u; document.head.appendChild(l); }
+    function script(u){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=u; s.async=true; s.defer=true; s.onload=res; s.onerror=()=>rej(new Error(u)); document.head.appendChild(s); }); }
     css('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'); css('https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css');
     try{
       try{ await script('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'); }catch{ await script('https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js'); }
       try{ await script('https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.min.js'); }catch{ await script('https://cdn.jsdelivr.net/npm/h3-js@4.1.0/dist/h3-js.umd.min.js'); }
-    }catch(e){ txt($('status'), 'Map libs failed to load'); console.error(e); return; }
+    }catch(e){ txt($('status'),'Map libs failed to load'); console.error(e); return; }
 
-    // --- logout
-    $('btnLogout').onclick = async ()=>{ await fetch('/api/auth/logout',{method:'POST'}); location.href='/login.html'; };
-
-    // --- map init
+    // map
     const map = L.map('map',{doubleClickZoom:false}).setView([32.4279,53.6880],5);
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(map);
     osm.on('tileerror', ()=>{ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(map); });
     const layerAgg = L.layerGroup().addTo(map);
     const H3_RES = 7;
+
     let selectedHex = null;
     let currentArea = null;
 
-    const updateSel = () => {
-      const canAdd = (!!selectedHex);
-      $('btnAdd').disabled = !canAdd;
-      txt($('status'), selectedHex ? `Selected: ${selectedHex}` : '');
-    };
-    const hexPoly = (h, op=.35) => {
-      const coords = h3.cellToBoundary(h,true).map(([lat,lng])=>[lat,lng]);
-      const poly = L.polygon(coords,{weight:1,fillOpacity:op});
-      poly.on('click', (e)=>{ e.originalEvent?.preventDefault?.(); selectedHex=h; $('areaCell').value=h; updateSel(); });
-      return poly;
-    };
+    function updateSel(){ $('btnAdd').disabled = !selectedHex; txt($('status'), selectedHex ? `Selected: ${selectedHex}` : ''); }
+    function hexPoly(h,op=.35){ const coords=h3.cellToBoundary(h,true).map(([lat,lng])=>[lat,lng]); const p=L.polygon(coords,{weight:1,fillOpacity:op}); p.on('click',(e)=>{ e.originalEvent?.preventDefault?.(); selectedHex=h; $('areaCell').value=h; updateSel();}); return p; }
     map.on('click',(e)=>{ selectedHex=h3.latLngToCell(e.latlng.lat,e.latlng.lng,H3_RES); $('areaCell').value=selectedHex; updateSel(); });
 
-    // --- profile: set area + group size
     $('btnUseSelected').onclick = ()=>{ if(selectedHex) $('areaCell').value=selectedHex; };
     $('btnSaveProfile').onclick = async ()=>{
       const area_h3 = $('areaCell').value.trim();
@@ -125,7 +115,6 @@
       if(out.ok){ currentArea=area_h3; await loadAgg(); await refreshChat(); }
     };
 
-    // --- add point (optional)
     $('btnAdd').onclick = async ()=>{
       if(!selectedHex) return;
       const value = Number($('valInput').value); if(!Number.isFinite(value)){ alert('Enter a numeric value'); return; }
@@ -134,7 +123,6 @@
       if(out.ok){ txt($('status'),'Inserted'); await loadAgg(); } else { txt($('status'),'Insert failed: '+(out.message||'unknown')); }
     };
 
-    // --- aggregates
     async function loadAgg(){
       layerAgg.clearLayers();
       try{
@@ -149,30 +137,27 @@
       }catch(e){ txt($('status'),'Agg error: '+e.message); }
     }
 
-    // --- chat
     async function refreshChat(){
-      if(!currentArea || !window.__UID__){ $('chatList').innerHTML=''; show($('badge'), false); return; }
+      if(!currentArea || !window.__UID__){ $('chatList').innerHTML=''; document.getElementById('badge').style.display='none'; return; }
       try{
         const r = await fetch(`/api/chat/list?area=${encodeURIComponent(currentArea)}&limit=100`);
         const out = await r.json();
         if(!out.ok){ txt($('chatMsg'),'Load failed'); return; }
-        $('chatList').innerHTML = (out.items||[]).map(m=>(
-          `<div class="msg"><div class="muted">${new Date(m.created_at).toLocaleString()}</div>${m.body}</div>`
-        )).join('');
+        $('chatList').innerHTML = (out.items||[]).map(m=>(`<div class="msg"><div class="muted">${new Date(m.created_at).toLocaleString()}</div>${m.body}</div>`)).join('');
         $('chatList').scrollTop = $('chatList').scrollHeight;
 
         const rx = await fetch(`/api/chat/unread?area=${encodeURIComponent(currentArea)}&uid=${encodeURIComponent(window.__UID__)}`);
         const ux = await rx.json(); const c = Number(ux?.count||0);
-        $('badge').textContent = String(c); show($('badge'), c>0);
+        const b = document.getElementById('badge'); b.textContent = String(c); b.style.display = c>0 ? '' : 'none';
       }catch{}
     }
-    $('btnSendChat').onclick = async ()=>{
+    document.getElementById('btnSendChat').onclick = async ()=>{
       if(!currentArea){ txt($('chatMsg'),'Save your area first'); return; }
-      const body = $('chatInput').value.trim(); if(!body) return;
+      const body = document.getElementById('chatInput').value.trim(); if(!body) return;
       await fetch('/api/chat/seen',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({area_h3:currentArea})});
       const r = await fetch('/api/chat/post',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({area_h3:currentArea, body})});
       const out = await r.json();
-      if(out.ok){ $('chatInput').value=''; await refreshChat(); } else { txt($('chatMsg'),'Send failed: '+(out.message||'unknown')); }
+      if(out.ok){ document.getElementById('chatInput').value=''; await refreshChat(); } else { txt($('chatMsg'),'Send failed: '+(out.message||'unknown')); }
     };
 
     await loadAgg();
