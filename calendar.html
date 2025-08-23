@@ -54,10 +54,12 @@
   .note strong{color:#e5e7eb}
 
   /* PRINT — force single A3 page with auto-scale */
- @media print{
-  @page{ size:A3 portrait; margin:10mm }
+@media print{
+  /* minimal margin, full-page feel */
+  @page{ size:A3 portrait; margin:5mm }
+  :root{ --m:5mm } /* page margin variable */
 
-  /* Hide UI in print */
+  /* hide UI in print */
   .topbar .controls,
   .emblem,
   .user-btn,
@@ -70,37 +72,56 @@
   .fact{ background:#fff; border-color:#999 }
   .fact .num{ color:#000 }
 
-  /* Fit EVERYTHING below into ONE A3 sheet */
+  /* the printable area sized to inner A3, laid out as rows:
+     facts | (grid CENTERED) | meta | note  */
   .print-area{
-    width:277mm;              /* 297 - (2×10mm margins) */
-    max-height:400mm;         /* 420 - (2×10mm margins) */
-    overflow:hidden;
-    break-inside:avoid;
-    page-break-inside:avoid;
-    transform-origin:top left;
+    width: calc(297mm - 2*var(--m));
+    height: calc(420mm - 2*var(--m));
+    margin: 0;
+    display: grid;
+    grid-template-rows: auto 1fr auto auto;
+    transform-origin: top left;
+    overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
-  /* Tight, fixed-mm grid so 78 rows fit */
+  /* center the grid block vertically & horizontally */
+  #grid{
+    margin: auto;                 /* centers inside the 1fr row */
+  }
+
+  /* mm-true grid that FITS both width and height (uses --rows from JS) */
   .grid{
-    --gap:1mm;
-    --cell:2.8mm;               /* ↓ if you still see 2 pages, try 2.8mm */
-    display:grid;
-    grid-template-columns:repeat(52, var(--cell));
-    gap:var(--gap);
-    padding:0;
-    margin:4mm 0 0 0;
+    --gap: 0.8mm;
+    --cellW: calc((100% - 51 * var(--gap)) / 52);                  /* width-limited cell */
+    --cellH: calc((100% - (var(--rows) - 1) * var(--gap)) / var(--rows)); /* height-limited cell */
+    --cell: min(var(--cellW), var(--cellH));                       /* pick the smaller so it fits */
+    display: grid;
+    grid-template-columns: repeat(52, var(--cell));
+    gap: var(--gap);
+    padding: 0;
   }
   .cell{
-    width:var(--cell);
-    height:var(--cell);
-    aspect-ratio:auto !important;
-    border:0.2mm solid #777;
+    width: var(--cell);
+    height: var(--cell);
+    aspect-ratio: auto !important;
+    border: 0.2mm solid #777;
+    overflow: hidden;             /* keep emoji inside */
   }
-  .cell.past{ background:#ffc5c5 !important } /* light red on paper */
+  .cell.past{ background:#ffc5c5 !important }  /* soft on paper */
 
-  /* Keep blocks together */
-  .facts, .meta, .note{ break-inside:avoid; page-break-inside:avoid }
+  /* emoji size relative to cell — prevents spill at small cells */
+  .cell.past.sun::after,
+  .cell.past.poop::after{
+    font-size: calc(var(--cell) * 0.55);
+    line-height: 1;
+  }
+
+  /* keep blocks together */
+  .facts, .meta, .note{ break-inside: avoid; page-break-inside: avoid }
 }
+
 </style>
 </head>
 <body>
@@ -222,6 +243,9 @@ function build(){
   const ageYears = ageWeeks / 52;
   const displayYears = Math.max(exp, Math.ceil(ageYears + 5));
   const totalWeeks = displayYears * 52;
+  const rows = Math.ceil(totalWeeks / 52);
+gridEl.style.setProperty('--rows', rows);
+
 
   // counts under ☀️ (before boundary) and 💩 (after), only among PAST weeks
   let sunWeeks = 0;
