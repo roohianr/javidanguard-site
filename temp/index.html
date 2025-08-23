@@ -1,46 +1,216 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ایران جاوید</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Vazirmatn', sans-serif;
-      background: #fdfcf9;
-    }
-    .lion-sun {
-      position: absolute;
-      top: 1rem;
-      left: 1rem;
-      width: 70px;
-      opacity: 0.15;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ایران جاوید — صفحه نخست</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* borrowed from your calendar file */
+    --bg1:#0f172a; --bg2:#1e293b; --text:#e5e7eb; --muted:#93a5b1;
+    --accent1:#22d3ee; --accent2:#38bdf8;
+    --card-bg1: rgba(255,255,255,0.04);
+    --card-bg2: rgba(255,255,255,0.02);
+    --card-br: 18px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family: Vazirmatn, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    color:var(--text);
+    background: radial-gradient(1200px 800px at 80% -20%, #1f2937 0%, var(--bg1) 60%),
+               linear-gradient(180deg, var(--bg1), var(--bg2));
+    overflow-x:hidden;
+  }
+  .wrap{
+    max-width:1100px; margin:auto; padding:20px; min-height:100%;
+    display:flex; flex-direction:column; gap:24px; align-items:center; justify-content:center;
+  }
+  .title{
+    text-align:center;
+    text-shadow:0 2px 12px rgba(0,0,0,.35);
+  }
+  h1{margin:0; font-weight:800; font-size:clamp(22px, 4.6vw, 36px)}
+  .subtitle{color:var(--muted); font-size:clamp(12px, 2.8vw, 14px); margin-top:6px}
+
+  /* watermark */
+  .emblem{
+    position:fixed; top:18px; left:18px; width:64px; opacity:.15; pointer-events:none; filter:grayscale(100%);
+  }
+
+  /* cards */
+  .cards{
+    display:grid; gap:16px; width:100%; max-width:950px;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+  @media (max-width: 740px){ .cards{ grid-template-columns: 1fr } }
+
+  .card{
+    position:relative; perspective: 1600px; /* flip effect */
+    height: 240px;
+  }
+  .card-inner{
+    position:absolute; inset:0;
+    transform-style:preserve-3d;
+    transition: transform .9s cubic-bezier(.2,.7,.1,1), box-shadow .4s;
+    border-radius: var(--card-br);
+    box-shadow: 0 30px 80px rgba(0,0,0,.35);
+  }
+  .card:hover .card-inner{ box-shadow:0 40px 100px rgba(0,0,0,.45) }
+  .face{
+    position:absolute; inset:0; backface-visibility:hidden; overflow:hidden;
+    border:1px solid rgba(255,255,255,0.08); border-radius:var(--card-br);
+    background: linear-gradient(180deg, var(--card-bg1), var(--card-bg2));
+  }
+  .front{
+    display:flex; flex-direction:column; justify-content:space-between;
+    padding:18px;
+  }
+  .front h2{margin:0; font-size:22px}
+  .front p{margin:6px 0 0; color:var(--muted); font-size:13px}
+  .pill{
+    align-self:flex-start; padding:8px 12px; border-radius:12px; font-weight:700; font-size:12px;
+    background:linear-gradient(90deg, var(--accent1), var(--accent2)); color:#00111a;
+  }
+  .back{
+    transform:rotateY(180deg);
+    padding:20px; display:flex; flex-direction:column; gap:14px;
+  }
+  .back h3{margin:0 0 4px 0; font-size:18px}
+  .back p{margin:0; color:#cbd5e1; line-height:1.75; font-size:13px}
+  .actions{margin-top:auto; display:flex; gap:10px; flex-wrap:wrap}
+  .btn{
+    background:#0a1221; color:var(--text); border:1px solid rgba(255,255,255,.1);
+    padding:10px 14px; border-radius:10px; font-weight:700; cursor:pointer;
+  }
+  .btn.primary{
+    background:linear-gradient(90deg, var(--accent1), var(--accent2)); color:#00111a; border:none;
+  }
+
+  /* open state → expand & flip */
+  .card.open{ z-index: 50 }
+  .card.open .card-inner{
+    transform: rotateY(180deg) scale(1.02);
+  }
+  /* expand to almost full page while keeping perspective anchor */
+  .card.open{ height: min(92vh, 760px) }
+  .card.open .face{ border-radius:22px }
+  .card.open .back{ padding: clamp(18px, 4vw, 28px) }
+
+  /* subtle float */
+  .card { transform: translateZ(0); }
+  .card:not(.open) .card-inner{ transform: translateY(0) }
+  .card:not(.open):hover .card-inner{ transform: translateY(-4px) }
+
+  /* reduce motion */
+  @media (prefers-reduced-motion: reduce){
+    .card-inner{ transition:none }
+  }
+</style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen p-6 relative">
-  <!-- Lion & Sun emblem -->
-  <img src="/lion-sun.png" alt="شیر و خورشید" class="lion-sun">
+<body>
+  <img class="emblem" src="/lion-sun.svg" alt="شیر و خورشید">
 
-  <!-- Title -->
-  <h1 class="text-3xl font-bold text-center mb-8 text-yellow-900">
-    ایران جاوید
-  </h1>
+  <div class="wrap">
+    <div class="title">
+      <h1>ایران جاوید</h1>
+      <div class="subtitle">دو مسیر — یکی برای دیدن زمان، یکی برای ثبت ایران. طراحی مینیمال، یکدست، با حال و هوای ایرانی.</div>
+    </div>
 
-  <!-- Cards -->
-  <div class="grid gap-6 md:grid-cols-2 w-full max-w-3xl">
-    <!-- Card 1 -->
-    <a href="/calendar-intro.html" class="block bg-white shadow-lg rounded-xl p-6 hover:shadow-xl transition">
-      <h2 class="text-xl font-semibold mb-2">هفته‌های به‌جا نرفته‌ی من</h2>
-      <p class="text-gray-600 text-sm">هر هفته‌ی از دست‌رفته را ببین و قدر مانده‌ها را بدان.</p>
-    </a>
+    <div class="cards">
+      <!-- Calendar Card -->
+      <section class="card" id="card-calendar" aria-labelledby="cal-title">
+        <div class="card-inner">
+          <div class="face front">
+            <div>
+              <h2 id="cal-title">هفته‌های به‌جا نرفته‌ی من</h2>
+              <p>هر هفته‌ای که گذشت دیگر بازنمی‌گردد. ببین چه مانده، و کجا ایستاده‌ای.</p>
+            </div>
+            <span class="pill">عمومی • بدون ورود</span>
+          </div>
+          <div class="face back" role="region" aria-label="معرفی تقویم عمرت">
+            <h3>چرا «هفته‌های به‌جا نرفته»؟</h3>
+            <p>
+              این صفحه زندگی را به هفته‌ها می‌شکند؛ پیش و پس از مرز ۱۲ بهمن ۱۳۵۷ را با نشان‌های ☀️ و 💩 از هم جدا می‌کند
+              تا ببینی چه گذشته و چه می‌ماند. هدفش تلنگر است: هر هفته مهم است و بازپس‌گرفتنی نیست.
+            </p>
+            <p>
+              میانگین عمر قابل‌تنظیم است؛ اگر از میانگین جلوتر بودی، افق نمایش روی «سن فعلی + ۵ سال» می‌نشیند تا تصویر واقعی‌تری داشته باشی.
+            </p>
+            <div class="actions">
+              <a class="btn primary" href="/calendar.html">ورود به تقویم</a>
+              <button class="btn" data-close>بازگشت</button>
+            </div>
+          </div>
+        </div>
+      </section>
 
-    <!-- Card 2 -->
-    <a href="/map-intro.html" class="block bg-white shadow-lg rounded-xl p-6 hover:shadow-xl transition">
-      <h2 class="text-xl font-semibold mb-2">کورکور مپ</h2>
-      <p class="text-gray-600 text-sm">یاد و نام کورکور، و نقشه‌ای زنده برای ایران.</p>
-    </a>
+      <!-- Map Card -->
+      <section class="card" id="card-map" aria-labelledby="map-title">
+        <div class="card-inner">
+          <div class="face front">
+            <div>
+              <h2 id="map-title">کورکور مپ</h2>
+              <p>یاد کورکور؛ و نقشه‌ای زنده برای ثبت گروه‌ها و مردم ایران — فقط با ورود.</p>
+            </div>
+            <span class="pill">نیازمند ورود</span>
+          </div>
+          <div class="face back" role="region" aria-label="معرفی نقشه کورکور">
+            <h3>کورکور مپ برای چیست؟</h3>
+            <p>
+              این نقشه به نام کورکور ساخته شده؛ برای اینکه بتوانیم ثبت کنیم، ببینیم و هم‌افزا شویم.
+              داده‌ها در گذر زمان معنا می‌گیرند: گروه‌ها، جمع‌ها، شهرها — یک تصویر زنده از ایران.
+            </p>
+            <p>
+              برای حفظ امنیت و کیفیت ثبت‌ها، ورود لازم است. بعداً می‌توانیم حساب کاربری بی‌دردسر و داشبورد سبک اضافه کنیم.
+            </p>
+            <div class="actions">
+              <a class="btn primary" href="/login.html">ورود / ثبت‌نام</a>
+              <button class="btn" data-close>بازگشت</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
   </div>
+
+<script>
+  // flip + expand logic
+  const cards = document.querySelectorAll('.card');
+  cards.forEach(card => {
+    // open on click (front)
+    card.addEventListener('click', (e) => {
+      const isButton = e.target.closest('a,button');
+      if(isButton) return; // don't hijack buttons/links
+      // toggle open (only one open at a time)
+      const alreadyOpen = card.classList.contains('open');
+      document.querySelectorAll('.card.open').forEach(c=>c.classList.remove('open'));
+      if(!alreadyOpen) card.classList.add('open');
+    });
+    // close buttons
+    card.querySelectorAll('[data-close]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        card.classList.remove('open');
+      });
+    });
+  });
+
+  // close if user clicks outside any open card
+  document.addEventListener('click', (e)=>{
+    const open = document.querySelector('.card.open');
+    if(!open) return;
+    if(!open.contains(e.target)) open.classList.remove('open');
+  });
+
+  // keyboard escape
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape'){
+      document.querySelectorAll('.card.open').forEach(c=>c.classList.remove('open'));
+    }
+  });
+</script>
 </body>
 </html>
