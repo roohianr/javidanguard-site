@@ -1,97 +1,36 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Login — Javidan Guard</title>
-  <style>
-    :root { color-scheme: light dark; }
-    *{box-sizing:border-box}
-    body{margin:0;font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0b0d10;color:#e9eef5;}
-    .wrap{min-height:100dvh;display:grid;place-items:center;padding:24px;}
-    .card{width:100%;max-width:480px;background:#11161c;border:1px solid #1f2a35;border-radius:16px;padding:24px;box-shadow:0 10px 40px rgba(0,0,0,.4)}
-    h1{margin:0 0 8px;font-size:24px}
-    p.muted{margin:0 0 20px;color:#9fb0c1;font-size:14px}
-    label{display:block;margin:12px 0 6px;color:#cfe0f1;font-size:14px}
-    input,button{width:100%;padding:12px 14px;border-radius:10px;border:1px solid #2a3a49;background:#0f141a;color:#e9eef5}
-    button{cursor:pointer;background:#2563eb;border-color:#2563eb;font-weight:600}
-    button.secondary{background:#0f141a;border-color:#2a3a49}
-    .row{display:flex;gap:10px}
-    .recovery{margin-top:8px;padding:10px;border-radius:8px;background:#0b1117;border:1px dashed #2a3a49;font-family:ui-monospace,Menlo,Consolas,mono;word-break:break-all}
-    .msg{margin-top:8px;color:#9fb0c1;font-size:14px;min-height:18px}
-    .hidden{display:none}
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ورود — کورکور مپ</title>
+<link rel="preload" href="/Vazirmatn/Vazirmatn-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/css/theme.css">
+<link rel="stylesheet" href="/css/components.css">
+<style>
+  .shell{min-height:100vh; display:grid; place-items:center; padding:20px}
+  .card{width:100%; max-width:420px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+        border-radius:16px; padding:18px; box-shadow:var(--shadow-md)}
+  h1{margin:0 0 6px 0; font-size:22px; font-weight:800}
+  p{margin:0 0 14px 0; color:var(--muted); font-size:14px}
+  label{display:block; font-size:12px; color:var(--muted); margin:8px 0 6px}
+  input,button{width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.1); background:#0a1221; color:var(--text)}
+  button{margin-top:12px; font-weight:700; background:linear-gradient(90deg,#22d3ee,#38bdf8); color:#00111a; border:none}
+</style>
 </head>
 <body>
-  <div class="wrap">
+  <img class="emblem" src="/assets/lion-sun.svg" alt="شیر و خورشید">
+
+  <div class="shell">
     <div class="card">
-      <h1>Welcome</h1>
-      <p class="muted">Create a private account or recover with your phrase.</p>
-
-      <div id="already" class="msg hidden"></div>
-
-      <div class="row">
-        <button id="btnCreate">Create private account</button>
-        <button id="btnGoDashboard" class="secondary hidden">Go to dashboard</button>
-      </div>
-
-      <div id="created" class="hidden">
-        <label>Your recovery phrase (save it securely)</label>
-        <div id="recovery" class="recovery"></div>
-      </div>
-
-      <label for="inpRecovery">Recovery phrase</label>
-      <input id="inpRecovery" placeholder="Paste your recovery phrase"/>
-      <button id="btnRecover" class="secondary">Recover account</button>
-
-      <div id="authMsg" class="msg"></div>
+      <h1>ورود / ثبت‌نام</h1>
+      <p>به کورکور مپ خوش آمدی. برای ادامه وارد شو.</p>
+      <label>ایمیل</label>
+      <input type="email" placeholder="you@example.com">
+      <label>رمز عبور</label>
+      <input type="password" placeholder="••••••••">
+      <button onclick="location.href='/dashboard.html'">ورود</button>
     </div>
   </div>
-
-  <script>
-  (async function(){
-    const $ = id => document.getElementById(id);
-    const show = (el, on) => el.classList.toggle('hidden', !on);
-    const txt  = (el, t) => el.textContent = t || '';
-
-    async function me(){ const r = await fetch('/api/auth/me'); return r.json(); }
-
-    // If already logged in, suggest dashboard
-    try {
-      const out = await me();
-      if (out?.loggedIn) { show($('btnGoDashboard'), true); txt($('already'),'You are already logged in.'); show($('already'), true); }
-    } catch {}
-
-    $('btnGoDashboard').onclick = () => location.href = '/dashboard.html';
-
-    $('btnCreate').onclick = async () => {
-      txt($('authMsg'),'…');
-      try{
-        const r = await fetch('/api/auth/create',{method:'POST'});
-        const out = await r.json();
-        if (out.ok && !out.already) {
-          show($('created'), true); txt($('recovery'), out.recovery);
-          txt($('authMsg'),'Account created. Redirecting…');
-          setTimeout(()=>location.href='/dashboard.html', 600);
-        } else if (out.ok && out.already) {
-          txt($('authMsg'),'You are already logged in.'); show($('btnGoDashboard'), true);
-        } else {
-          txt($('authMsg'),'Failed: '+(out.message||'unknown'));
-        }
-      }catch(e){ txt($('authMsg'),'Failed: '+e.message); }
-    };
-
-    $('btnRecover').onclick = async () => {
-      txt($('authMsg'),'…');
-      const recovery = $('inpRecovery').value.trim();
-      try{
-        const r = await fetch('/api/auth/recover',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recovery})});
-        const out = await r.json();
-        if (out.ok) { txt($('authMsg'),'Recovered. Redirecting…'); setTimeout(()=>location.href='/dashboard.html', 400); }
-        else { txt($('authMsg'),'Failed: '+(out.message||'unknown')); }
-      }catch(e){ txt($('authMsg'),'Failed: '+e.message); }
-    };
-  })();
-  </script>
 </body>
 </html>
