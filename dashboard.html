@@ -1,168 +1,46 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Dashboard — Javidan Guard</title>
-  <style>
-    :root { color-scheme: light dark; }
-    *{box-sizing:border-box}
-    body{margin:0;font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0b0d10;color:#e9eef5}
-    header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #1f2a35;background:#0f141a;position:sticky;top:0;z-index:10}
-    header .brand{font-weight:700;letter-spacing:.2px}
-    header .actions button{margin-left:8px}
-    .page{display:grid;grid-template-columns:1fr 380px;gap:0;height:calc(100dvh - 56px)}
-    #map{width:100%;height:100%}
-    aside{border-left:1px solid #1f2a35;background:#0f141a;padding:14px;overflow:auto}
-    h3{margin:10px 0}
-    .muted{color:#9fb0c1;font-size:13px}
-    input,button,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #2a3a49;background:#0b1117;color:#e9eef5}
-    button{cursor:pointer;background:#2563eb;border-color:#2563eb;font-weight:600}
-    button.ghost{background:#0b1117;border-color:#2a3a49}
-    .row{display:flex;gap:8px}
-    .row > *{flex:1}
-    .badge{display:inline-block;min-width:20px;padding:2px 6px;border-radius:10px;background:#333;color:#fff;font-size:12px;text-align:center}
-    #chatList{border:1px solid #2a3a49;border-radius:8px;padding:8px;height:220px;overflow:auto;background:#0b1117}
-    .msg{margin:4px 0;padding:6px 8px;border-radius:6px;background:#0f141a;border:1px solid #1f2a35}
-    .status{min-height:18px}
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>داشبورد</title>
+<link rel="preload" href="/Vazirmatn/Vazirmatn-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/css/theme.css">
+<link rel="stylesheet" href="/css/components.css">
+<style>
+  .wrap{max-width:1100px; margin:auto; padding:20px}
+  .grid{display:grid; gap:16px; grid-template-columns: repeat(3, 1fr)}
+  @media (max-width:900px){ .grid{grid-template-columns:1fr} }
+  .box{background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:16px}
+  h1{margin:0 0 12px 0; font-size:22px; font-weight:800}
+  h2{margin:0 0 10px 0; font-size:16px}
+  .muted{color:var(--muted); font-size:13px}
+</style>
 </head>
 <body>
-  <header>
-    <div class="brand">Javidan Guard</div>
-    <div class="actions">
-      <span id="loginState" class="muted">Checking…</span>
-      <button id="btnLogout" class="ghost">Log out</button>
+  <img class="emblem" src="/assets/lion-sun.svg" alt="شیر و خورشید">
+  <a class="user-btn" href="/login.html" aria-label="ورود / خروج">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 12c2.761 0 5-2.462 5-5.5S14.761 1 12 1 7 3.462 7 6.5 9.239 12 12 12Zm0 2c-4.97 0-9 3.582-9 8 0 .552.448 1 1 1h16c.552 0 1-.448 1-1 0-4.418-4.03-8-9-8Z" fill="currentColor"/>
+    </svg>
+  </a>
+
+  <div class="wrap">
+    <h1>داشبورد</h1>
+    <div class="grid">
+      <section class="box">
+        <h2>پیام‌ها</h2>
+        <p class="muted">— جای‌نگهدار پیام‌ها —</p>
+      </section>
+      <section class="box">
+        <h2>ورودی‌ها</h2>
+        <p class="muted">— فرم‌ها / داده‌های ارسالی —</p>
+      </section>
+      <section class="box">
+        <h2>مناطق ذخیره‌شده</h2>
+        <p class="muted">— لیست محدوده‌های انتخاب‌شده —</p>
+      </section>
     </div>
-  </header>
-
-  <div class="page">
-    <div id="map"></div>
-    <aside>
-      <h3>My Area & Group</h3>
-      <p class="muted">Click the map to select your area (hex). Save your group size, then use chat.</p>
-      <div class="row">
-        <input id="groupSize" type="number" min="1" max="9999" step="1" placeholder="Group size"/>
-        <button id="btnUseSelected" class="ghost" title="Use selected hex">Use</button>
-      </div>
-      <input id="areaCell" placeholder="Selected area (H3)" readonly/>
-      <button id="btnSaveProfile">Save Profile</button>
-      <div id="profileMsg" class="muted status"></div>
-
-      <h3>Area Chat <span id="badge" class="badge" style="display:none">0</span></h3>
-      <div id="chatList"></div>
-      <textarea id="chatInput" rows="3" placeholder="Message to people in this area…"></textarea>
-      <button id="btnSendChat" class="ghost">Send</button>
-      <div id="chatMsg" class="muted status"></div>
-
-      <h3>Map Add (optional)</h3>
-      <p class="muted">Click map to select a hex, then add a numeric value.</p>
-      <div class="row">
-        <input id="valInput" type="number" step="0.01" placeholder="Value (e.g. 1.0)"/>
-        <button id="btnAdd" class="ghost" disabled>Add</button>
-      </div>
-      <div id="status" class="muted status"></div>
-    </aside>
   </div>
-
-  <script>
-  (async function(){
-    const $ = id => document.getElementById(id);
-    const show = (el, on) => el.style.display = on ? '' : 'none';
-    const txt = (el, t) => el.textContent = t || '';
-    await new Promise(r => (document.readyState === 'complete' ? r() : window.addEventListener('load', r)));
-
-    // require login
-    try {
-      const r = await fetch('/api/auth/me'); const out = await r.json();
-      if (!out?.loggedIn) { location.href = '/login.html'; return; }
-      txt($('loginState'), 'Logged in'); window.__UID__ = out.userId;
-    } catch { location.href = '/login.html'; return; }
-
-    // logout
-    $('btnLogout').onclick = async ()=>{ await fetch('/api/auth/logout',{method:'POST'}); location.href='/login.html'; };
-
-    // load Leaflet/h3 with fallbacks
-    function css(u){ const l=document.createElement('link'); l.rel='stylesheet'; l.href=u; document.head.appendChild(l); }
-    function script(u){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=u; s.async=true; s.defer=true; s.onload=res; s.onerror=()=>rej(new Error(u)); document.head.appendChild(s); }); }
-    css('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'); css('https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css');
-    try{
-      try{ await script('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'); }catch{ await script('https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js'); }
-      try{ await script('https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.min.js'); }catch{ await script('https://cdn.jsdelivr.net/npm/h3-js@4.1.0/dist/h3-js.umd.min.js'); }
-    }catch(e){ txt($('status'),'Map libs failed to load'); console.error(e); return; }
-
-    // map
-    const map = L.map('map',{doubleClickZoom:false}).setView([32.4279,53.6880],5);
-    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(map);
-    osm.on('tileerror', ()=>{ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(map); });
-    const layerAgg = L.layerGroup().addTo(map);
-    const H3_RES = 7;
-
-    let selectedHex = null;
-    let currentArea = null;
-
-    function updateSel(){ $('btnAdd').disabled = !selectedHex; txt($('status'), selectedHex ? `Selected: ${selectedHex}` : ''); }
-    function hexPoly(h,op=.35){ const coords=h3.cellToBoundary(h,true).map(([lat,lng])=>[lat,lng]); const p=L.polygon(coords,{weight:1,fillOpacity:op}); p.on('click',(e)=>{ e.originalEvent?.preventDefault?.(); selectedHex=h; $('areaCell').value=h; updateSel();}); return p; }
-    map.on('click',(e)=>{ selectedHex=h3.latLngToCell(e.latlng.lat,e.latlng.lng,H3_RES); $('areaCell').value=selectedHex; updateSel(); });
-
-    $('btnUseSelected').onclick = ()=>{ if(selectedHex) $('areaCell').value=selectedHex; };
-    $('btnSaveProfile').onclick = async ()=>{
-      const area_h3 = $('areaCell').value.trim();
-      const group_size = Number($('groupSize').value);
-      const r = await fetch('/api/user/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({area_h3,group_size})});
-      const out = await r.json();
-      txt($('profileMsg'), out.ok ? 'Profile saved' : 'Failed: '+(out.message||'unknown'));
-      if(out.ok){ currentArea=area_h3; await loadAgg(); await refreshChat(); }
-    };
-
-    $('btnAdd').onclick = async ()=>{
-      if(!selectedHex) return;
-      const value = Number($('valInput').value); if(!Number.isFinite(value)){ alert('Enter a numeric value'); return; }
-      const r = await fetch('/api/map/points-insert',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cell:selectedHex,value})});
-      const out = await r.json();
-      if(out.ok){ txt($('status'),'Inserted'); await loadAgg(); } else { txt($('status'),'Insert failed: '+(out.message||'unknown')); }
-    };
-
-    async function loadAgg(){
-      layerAgg.clearLayers();
-      try{
-        const r = await fetch('/api/map/area-aggregate'); const out = await r.json();
-        if(!out.ok){ txt($('status'),'Agg error: '+(out.message||'unknown')); return; }
-        (out.items||[]).forEach(a=>{
-          const op = Math.min(.7, .2 + (Number(a.units)||0)*.02);
-          const poly = hexPoly(a.h3, op);
-          poly.bindTooltip(`${a.h3}<br>users: ${a.users}<br>units: ${a.units}`);
-          layerAgg.addLayer(poly);
-        });
-      }catch(e){ txt($('status'),'Agg error: '+e.message); }
-    }
-
-    async function refreshChat(){
-      if(!currentArea || !window.__UID__){ $('chatList').innerHTML=''; document.getElementById('badge').style.display='none'; return; }
-      try{
-        const r = await fetch(`/api/chat/list?area=${encodeURIComponent(currentArea)}&limit=100`);
-        const out = await r.json();
-        if(!out.ok){ txt($('chatMsg'),'Load failed'); return; }
-        $('chatList').innerHTML = (out.items||[]).map(m=>(`<div class="msg"><div class="muted">${new Date(m.created_at).toLocaleString()}</div>${m.body}</div>`)).join('');
-        $('chatList').scrollTop = $('chatList').scrollHeight;
-
-        const rx = await fetch(`/api/chat/unread?area=${encodeURIComponent(currentArea)}&uid=${encodeURIComponent(window.__UID__)}`);
-        const ux = await rx.json(); const c = Number(ux?.count||0);
-        const b = document.getElementById('badge'); b.textContent = String(c); b.style.display = c>0 ? '' : 'none';
-      }catch{}
-    }
-    document.getElementById('btnSendChat').onclick = async ()=>{
-      if(!currentArea){ txt($('chatMsg'),'Save your area first'); return; }
-      const body = document.getElementById('chatInput').value.trim(); if(!body) return;
-      await fetch('/api/chat/seen',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({area_h3:currentArea})});
-      const r = await fetch('/api/chat/post',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({area_h3:currentArea, body})});
-      const out = await r.json();
-      if(out.ok){ document.getElementById('chatInput').value=''; await refreshChat(); } else { txt($('chatMsg'),'Send failed: '+(out.message||'unknown')); }
-    };
-
-    await loadAgg();
-    setInterval(refreshChat, 8000);
-  })();
-  </script>
 </body>
 </html>
