@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>هفته‌های به‌جا نرفته‌ی من</title>
+<link rel="preload" href="/Vazirmatn/Vazirmatn-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/css/theme.css">
+<link rel="stylesheet" href="/css/components.css">
+<style>
+  .topbar{display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:14px}
+  .controls{display:flex; flex-wrap:wrap; gap:10px; align-items:center}
+  .controls input,.controls button{
+    background:#0a1221; color:var(--text); border:1px solid rgba(255,255,255,.1);
+    padding:10px 12px; border-radius:10px;
+  }
+  .controls button.primary{background:linear-gradient(90deg,var(--accent1),var(--accent2)); color:#00111a; border:none; font-weight:700}
+
+  .legend{display:flex; gap:12px; align-items:center; color:var(--muted); font-size:13px}
+
+  .canvas{
+    width:100%; background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.08); border-radius:16px;
+    padding:16px; box-shadow:var(--shadow-md)
+  }
+  .grid{
+    --cols:52;
+    display:grid; grid-template-columns:repeat(var(--cols), 1fr);
+    gap:2px; background:rgba(255,255,255,.06); padding:2px; border-radius:10px;
+  }
+  .cell{
+    aspect-ratio:1/1; background:rgba(255,255,255,.02);
+    border:1px solid rgba(255,255,255,.06); border-radius:3px;
+  }
+  .cell.past{ background:rgba(56,189,248,.6) }      /* future-safe on screen */
+  .cell.future{ background:rgba(255,255,255,.02) }
+  .cell.sun::after{ content:"☀️"; font-size:10px; display:block; text-align:center; line-height:1.2; opacity:.9 }
+  .cell.poop::after{ content:"💩"; font-size:10px; display:block; text-align:center; line-height:1.2; opacity:.9 }
+
+  .meta{display:flex; justify-content:space-between; gap:10px; margin-top:10px; color:var(--muted); font-size:13px}
+  .note{margin-top:12px; color:#cbd5e1; font-size:13px; line-height:1.75}
+
+  /* Print */
+  @media print{
+    @page{ size:A4; margin:12mm }
+    body{ background:#fff; color:#000 }
+    .emblem,.user-btn,.controls .primary,.controls .calc{ display:none!important }
+    .canvas{ box-shadow:none; border:0; padding:0 }
+    .cell{ border:1px solid #999; background:#e6f3ff !important } /* light for paper */
+    .cell.future{ background:#fff !important }
+    .legend,.note{ color:#111 }
+  }
+</style>
+</head>
+<body>
+  <!-- watermark -->
+  <img class="emblem" src="/assets/lion-sun.svg" alt="شیر و خورشید">
+  <!-- top-right user button -->
+  <a class="user-btn" href="/login.html" aria-label="ورود به داشبورد">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 12c2.761 0 5-2.462 5-5.5S14.761 1 12 1 7 3.462 7 6.5 9.239 12 12 12Zm0 2c-4.97 0-9 3.582-9 8 0 .552.448 1 1 1h16c.552 0 1-.448 1-1 0-4.418-4.03-8-9-8Z" fill="currentColor"/>
+    </svg>
+  </a>
+
+  <div class="wrap" style="justify-content:flex-start">
+    <div class="title" style="margin-top:18px">
+      <h1>هفته‌های به‌جا نرفته‌ی من</h1>
+      <div class="subtitle">هر هفته مهم است. این صفحه زندگی را به هفته‌ها می‌شکند.</div>
+    </div>
+
+    <div class="canvas">
+      <div class="topbar">
+        <div class="controls">
+          <label>تاریخ تولد:</label>
+          <input type="date" id="dob" class="input">
+          <label>امید به زندگی (سال):</label>
+          <input type="number" id="expect" value="78" min="40" max="120" step="1" style="width:88px">
+          <button class="calc" onclick="build()">محاسبه</button>
+          <button id="printBtn" class="primary" onclick="window.print()" hidden>پرینت A4</button>
+        </div>
+        <div class="legend">
+          <span>☀️ قبل از ۱۲ بهمن ۱۳۵۷</span>
+          <span>💩 بعد از آن</span>
+        </div>
+      </div>
+
+      <div id="grid" class="grid" aria-label="گرید هفته‌ها"></div>
+
+      <div class="meta">
+        <div id="statsLeft"></div>
+        <div id="statsRight"></div>
+      </div>
+
+      <p class="note">
+        نکته: اگر از میانگین جلوتر بودی، نمایش تا «سن فعلی + ۵ سال» ادامه می‌یابد تا تصویر واقعی‌تری داشته باشی.
+        دکمهٔ پرینت بعد از محاسبه فعال می‌شود و در نسخهٔ چاپی نمایش داده نمی‌شود.
+      </p>
+    </div>
+  </div>
+
+<script>
+  const REVOLUTION = new Date('1979-02-11T00:00:00Z'); // 22 Bahman 1357 (close to 12 Bahman arrival)
+  const gridEl = document.getElementById('grid');
+  const printBtn = document.getElementById('printBtn');
+  const statsLeft = document.getElementById('statsLeft');
+  const statsRight = document.getElementById('statsRight');
+
+  function weeksBetween(a,b){
+    const ms = b - a;
+    return Math.floor(ms / (1000*60*60*24*7));
+  }
+  function addWeeks(date, w){
+    const d = new Date(date);
+    d.setUTCDate(d.getUTCDate() + w*7);
+    return d;
+  }
+  function build(){
+    const dobStr = document.getElementById('dob').value;
+    const expect = Math.max(40, Math.min(120, Number(document.getElementById('expect').value||78)));
+    if(!dobStr){ alert('تاریخ تولد را وارد کن'); return; }
+
+    const dob = new Date(dobStr+'T00:00:00Z');
+    const today = new Date(); // now
+
+    // age in years
+    const ageWeeks = Math.max(0, weeksBetween(dob, today));
+    const ageYears = ageWeeks / 52;
+    const displayYears = Math.max(expect, Math.ceil(ageYears + 5));
+    const totalWeeks = displayYears * 52;
+
+    gridEl.textContent = '';
+    for(let w=0; w<totalWeeks; w++){
+      const cellDate = addWeeks(dob, w); // absolute week start
+      const isPast = cellDate <= today;
+      const div = document.createElement('div');
+      div.className = 'cell ' + (isPast ? 'past' : 'future') + ' ' + (cellDate < REVOLUTION ? 'sun' : 'poop');
+      gridEl.appendChild(div);
+    }
+
+    printBtn.hidden = false; // show after calc
+
+    // stats
+    const left = totalWeeks - ageWeeks;
+    statsLeft.textContent = `هفته‌های گذشته: ${ageWeeks.toLocaleString('fa-IR')}`;
+    statsRight.textContent = `هفته‌های باقی‌مانده تا ${displayYears} سال: ${left.toLocaleString('fa-IR')}`;
+  }
+
+  // optional: prefill DOB from localStorage
+  (function(){
+    const k='wofl-dob';
+    const dobInput=document.getElementById('dob');
+    dobInput.value = localStorage.getItem(k)||'';
+    dobInput.addEventListener('change',()=>localStorage.setItem(k,dobInput.value));
+  })();
+</script>
+</body>
+</html>
