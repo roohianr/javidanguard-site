@@ -7,20 +7,18 @@
   <style>
     :root { color-scheme: light dark; }
     *{box-sizing:border-box}
-    body{margin:0;font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;background:#0b0d10;color:#e9eef5;}
+    body{margin:0;font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0b0d10;color:#e9eef5;}
     .wrap{min-height:100dvh;display:grid;place-items:center;padding:24px;}
     .card{width:100%;max-width:480px;background:#11161c;border:1px solid #1f2a35;border-radius:16px;padding:24px;box-shadow:0 10px 40px rgba(0,0,0,.4)}
     h1{margin:0 0 8px;font-size:24px}
     p.muted{margin:0 0 20px;color:#9fb0c1;font-size:14px}
     label{display:block;margin:12px 0 6px;color:#cfe0f1;font-size:14px}
-    input,button,textarea{width:100%;padding:12px 14px;border-radius:10px;border:1px solid #2a3a49;background:#0f141a;color:#e9eef5}
+    input,button{width:100%;padding:12px 14px;border-radius:10px;border:1px solid #2a3a49;background:#0f141a;color:#e9eef5}
     button{cursor:pointer;background:#2563eb;border-color:#2563eb;font-weight:600}
     button.secondary{background:#0f141a;border-color:#2a3a49}
     .row{display:flex;gap:10px}
-    .recovery{margin-top:8px;padding:10px;border-radius:8px;background:#0b1117;border:1px dashed #2a3a49;font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;word-break:break-all}
+    .recovery{margin-top:8px;padding:10px;border-radius:8px;background:#0b1117;border:1px dashed #2a3a49;font-family:ui-monospace,Menlo,Consolas,mono;word-break:break-all}
     .msg{margin-top:8px;color:#9fb0c1;font-size:14px;min-height:18px}
-    .footer{margin-top:16px;text-align:center}
-    a{color:#93c5fd;text-decoration:none}
     .hidden{display:none}
   </style>
 </head>
@@ -47,10 +45,6 @@
       <button id="btnRecover" class="secondary">Recover account</button>
 
       <div id="authMsg" class="msg"></div>
-
-      <div class="footer">
-        <a href="/dashboard.html">Skip to dashboard</a> (redirects only if logged in)
-      </div>
     </div>
   </div>
 
@@ -58,70 +52,45 @@
   (async function(){
     const $ = id => document.getElementById(id);
     const show = (el, on) => el.classList.toggle('hidden', !on);
-    const txt = (el, t) => el.textContent = t || '';
+    const txt  = (el, t) => el.textContent = t || '';
 
-    async function me() {
-      const r = await fetch('/api/auth/me'); return r.json();
-    }
-    async function gotoDashIfLogged() {
-      try {
-        const out = await me();
-        if (out?.loggedIn) location.href = '/dashboard.html';
-        else txt($('already'), '');
-      } catch {}
-    }
+    async function me(){ const r = await fetch('/api/auth/me'); return r.json(); }
+
+    // If already logged in, suggest dashboard
+    try {
+      const out = await me();
+      if (out?.loggedIn) { show($('btnGoDashboard'), true); txt($('already'),'You are already logged in.'); show($('already'), true); }
+    } catch {}
+
+    $('btnGoDashboard').onclick = () => location.href = '/dashboard.html';
 
     $('btnCreate').onclick = async () => {
-      txt($('authMsg'), '…');
-      try {
+      txt($('authMsg'),'…');
+      try{
         const r = await fetch('/api/auth/create',{method:'POST'});
         const out = await r.json();
         if (out.ok && !out.already) {
-          show($('created'), true);
-          txt($('recovery'), out.recovery);
-          txt($('authMsg'), 'Account created. Redirecting…');
-          show($('btnGoDashboard'), true);
-          setTimeout(()=>location.href='/dashboard.html', 800);
+          show($('created'), true); txt($('recovery'), out.recovery);
+          txt($('authMsg'),'Account created. Redirecting…');
+          setTimeout(()=>location.href='/dashboard.html', 600);
         } else if (out.ok && out.already) {
-          txt($('authMsg'), 'You are already logged in.');
-          show($('btnGoDashboard'), true);
+          txt($('authMsg'),'You are already logged in.'); show($('btnGoDashboard'), true);
         } else {
-          txt($('authMsg'), 'Failed: '+(out.message||'unknown'));
+          txt($('authMsg'),'Failed: '+(out.message||'unknown'));
         }
-      } catch(e){ txt($('authMsg'), 'Failed: '+e.message); }
+      }catch(e){ txt($('authMsg'),'Failed: '+e.message); }
     };
-
-    $('btnGoDashboard').onclick = () => location.href='/dashboard.html';
 
     $('btnRecover').onclick = async () => {
-      txt($('authMsg'), '…');
+      txt($('authMsg'),'…');
       const recovery = $('inpRecovery').value.trim();
-      try {
-        const r = await fetch('/api/auth/recover', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ recovery })
-        });
+      try{
+        const r = await fetch('/api/auth/recover',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recovery})});
         const out = await r.json();
-        if (out.ok) {
-          txt($('authMsg'), 'Recovered. Redirecting…');
-          setTimeout(()=>location.href='/dashboard.html', 500);
-        } else {
-          txt($('authMsg'), 'Failed: '+(out.message||'unknown'));
-        }
-      } catch(e){ txt($('authMsg'), 'Failed: '+e.message); }
+        if (out.ok) { txt($('authMsg'),'Recovered. Redirecting…'); setTimeout(()=>location.href='/dashboard.html', 400); }
+        else { txt($('authMsg'),'Failed: '+(out.message||'unknown')); }
+      }catch(e){ txt($('authMsg'),'Failed: '+e.message); }
     };
-
-    // If already logged in, suggest jumping to dashboard
-    try {
-      const out = await me();
-      if (out?.loggedIn) {
-        show($('btnGoDashboard'), true);
-        txt($('already'), 'You are already logged in.');
-        show($('already'), true);
-      }
-    } catch {}
-
-    // if user hits /login.html while logged in and clicks "Skip", dashboard will guard anyway
   })();
   </script>
 </body>
