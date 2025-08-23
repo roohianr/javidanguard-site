@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ایران جاوید</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+      background: #fdfcf9;
+    }
+    .lion-sun {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      width: 70px;
+      opacity: 0.15;
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-6 relative">
+  <!-- Lion & Sun emblem -->
+  <img src="/lion-sun.png" alt="شیر و خورشید" class="lion-sun">
+
+  <!-- Title -->
+  <h1 class="text-3xl font-bold text-center mb-8 text-yellow-900">
+    ایران جاوید
+  </h1>
+
+  <!-- Cards -->
+  <div class="grid gap-6 md:grid-cols-2 w-full max-w-3xl">
+    <!-- Card 1 -->
+    <a href="/calendar-intro.html" class="block bg-white shadow-lg rounded-xl p-6 hover:shadow-xl transition">
+      <h2 class="text-xl font-semibold mb-2">هفته‌های به‌جا نرفته‌ی من</h2>
+      <p class="text-gray-600 text-sm">هر هفته‌ی از دست‌رفته را ببین و قدر مانده‌ها را بدان.</p>
+    </a>
+
+    <!-- Card 2 -->
+    <a href="/map-intro.html" class="block bg-white shadow-lg rounded-xl p-6 hover:shadow-xl transition">
+      <h2 class="text-xl font-semibold mb-2">کورکور مپ</h2>
+      <p class="text-gray-600 text-sm">یاد و نام کورکور، و نقشه‌ای زنده برای ایران.</p>
+    </a>
+  </div>
+</body>
+</html>
