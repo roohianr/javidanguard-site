@@ -5,24 +5,33 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>هفته‌های به‌جا نرفته‌ی من</title>
 
-<!-- self-hosted Vazirmatn -->
+<!-- Self-hosted Vazirmatn -->
 <style>
 @font-face{
   font-family:"Vazirmatn";
   src:url("/assets/Vazirmatn/Vazirmatn-Variable.woff2") format("woff2-variations");
   font-weight:100 900; font-style:normal; font-display:swap;
 }
+
+/* ====== Design tokens ====== */
 :root{
   --bg1:#0f172a; --bg2:#1e293b;
   --text:#e5e7eb; --muted:#93a5b1;
   --accent1:#22d3ee; --accent2:#38bdf8;
+
   --card-bg1: rgba(255,255,255,0.04);
   --card-bg2: rgba(255,255,255,0.02);
   --card-br: 16px;
   --shadow: 0 24px 60px rgba(0,0,0,.35);
-  --past-bg: rgba(239, 68, 68, 0.38);   /* soft red */
-  --past-br: rgba(185, 28, 28, 0.55);
+
+  /* Past week fills */
+  --sun-bg:  rgba(56,189,248,0.38);  /* sky-400 @ 38% */
+  --sun-br:  rgba(2,132,199,0.55);   /* sky-600 @ 55% */
+  --poop-bg: rgba(239,68,68,0.38);   /* red-500 @ 38% */
+  --poop-br: rgba(185,28,28,0.55);   /* red-700 @ 55% */
 }
+
+/* ====== Base ====== */
 *,*::before,*::after{box-sizing:border-box}
 html,body{height:100%}
 body{
@@ -33,7 +42,9 @@ body{
     linear-gradient(180deg, var(--bg1), var(--bg2));
 }
 a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
 
+/* ====== UI chrome ====== */
 .emblem{
   position:fixed; top:16px; left:16px; width:64px; opacity:.15; filter:grayscale(100%); pointer-events:none;
 }
@@ -44,6 +55,7 @@ a{color:inherit;text-decoration:none}
 }
 .user-btn svg{width:22px;height:22px;color:#e5e7eb}
 
+/* ====== Layout ====== */
 .wrap{
   max-width:1100px; margin:auto; padding:20px; min-height:100%;
   display:flex; flex-direction:column; gap:16px; align-items:stretch; justify-content:flex-start;
@@ -60,6 +72,7 @@ a{color:inherit;text-decoration:none}
   padding:16px;
 }
 
+/* ====== Controls ====== */
 .topbar{display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px}
 .controls{display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap}
 .field{display:flex; flex-direction:column; gap:6px}
@@ -74,8 +87,7 @@ a{color:inherit;text-decoration:none}
   border:none; border-radius:10px; padding:10px 14px; font-weight:800;
 }
 
-.legend{display:flex; gap:12px; align-items:center; color:var(--muted); font-size:13px}
-
+/* ====== Facts ====== */
 .facts{
   display:grid; gap:10px; grid-template-columns:repeat(3,1fr); margin-bottom:12px;
 }
@@ -87,6 +99,7 @@ a{color:inherit;text-decoration:none}
 .fact .num{ font-weight:800; font-size:22px }
 .fact .lbl{ color:var(--muted); font-size:12px; margin-top:4px }
 
+/* ====== Grid ====== */
 .grid{
   --cols:52; --gap:2px;
   display:grid; grid-template-columns:repeat(var(--cols), 1fr);
@@ -96,20 +109,28 @@ a{color:inherit;text-decoration:none}
   aspect-ratio:1/1; background:rgba(255,255,255,.02);
   border:1px solid rgba(255,255,255,.06); border-radius:3px; position:relative; overflow:hidden;
 }
-.cell.past{ background:var(--past-bg); border-color:var(--past-br) }
+
+/* Only PAST weeks get colored; FUTURE stays empty */
+.cell.past{ background:transparent; border-color:rgba(255,255,255,.12); }
+.cell.past.sun  { background:var(--sun-bg);  border-color:var(--sun-br) }
+.cell.past.poop { background:var(--poop-bg); border-color:var(--poop-br) }
+
+/* subtle sheen */
 .cell.past::before{
   content:""; position:absolute; inset:0; border-radius:3px;
-  background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
   pointer-events:none;
 }
-/* icons only on PAST cells; small so they stay inside */
+
+/* Emojis ON (mobile + desktop), size follows cell px size */
 .cell.past.sun::after,
 .cell.past.poop::after{
   position:absolute; inset:0; display:grid; place-items:center;
-  font-size:10px; line-height:1; content:"";
+  line-height:1; content:"";
+  font-size: clamp(10px, calc(var(--cellpx, 12px) * 0.70), 18px);
 }
-.cell.past.sun::after{ content:"☀️" }
-.cell.past.poop::after{ content:"💩" }
+.cell.past.sun::after  { content:"☀️"; }
+.cell.past.poop::after { content:"💩"; }
 
 .meta{
   display:flex; justify-content:space-between; gap:10px; margin-top:10px;
@@ -153,7 +174,6 @@ a{color:inherit;text-decoration:none}
           </div>
           <button class="btn" id="calcBtn">محاسبه</button>
         </div>
-
         <div class="legend">
           <span>☀️ قبل از ۱۲ بهمن ۱۳۵۷</span>
           <span>💩 بعد از آن</span>
@@ -218,7 +238,7 @@ const statsLeft  = document.getElementById('statsLeft');
 const statsRight = document.getElementById('statsRight');
 const calcBtn    = document.getElementById('calcBtn');
 
-/* build grid + facts */
+/* Build grid + facts */
 function build(){
   const jy = +document.getElementById('jy').value;
   const jm = +document.getElementById('jm').value;
@@ -271,7 +291,26 @@ function build(){
   localStorage.setItem('wofl-jy', String(jy));
   localStorage.setItem('wofl-jm', String(jm).padStart(2,'0'));
   localStorage.setItem('wofl-jd', String(jd).padStart(2,'0'));
+
+  // scale emojis to cell size
+  updateEmojiScale();
 }
+
+/* Scale emojis to cell pixel size (mobile-friendly) */
+function updateEmojiScale(){
+  const firstCell = gridEl.querySelector('.cell');
+  if(!firstCell) return;
+  const r = firstCell.getBoundingClientRect();
+  const size = Math.min(r.width, r.height);
+  gridEl.style.setProperty('--cellpx', size + 'px');
+}
+
+/* keep emoji size on rotate/resize */
+let _resTO;
+window.addEventListener('resize', () => {
+  clearTimeout(_resTO);
+  _resTO = setTimeout(updateEmojiScale, 100);
+});
 
 /* restore inputs */
 (function(){
