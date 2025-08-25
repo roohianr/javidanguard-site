@@ -5,15 +5,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>هفته‌های به‌جا نرفته‌ی من</title>
 
-<!-- Self-hosted Vazirmatn -->
 <style>
+/* ===== Self-hosted Vazirmatn ===== */
 @font-face{
   font-family:"Vazirmatn";
   src:url("/assets/Vazirmatn/Vazirmatn-Variable.woff2") format("woff2-variations");
   font-weight:100 900; font-style:normal; font-display:swap;
 }
 
-/* ====== Design tokens ====== */
+/* ===== Tokens ===== */
 :root{
   --bg1:#0f172a; --bg2:#1e293b;
   --text:#e5e7eb; --muted:#93a5b1;
@@ -24,14 +24,14 @@
   --card-br: 16px;
   --shadow: 0 24px 60px rgba(0,0,0,.35);
 
-  /* Past week fills */
-  --sun-bg:  rgba(56,189,248,0.38);  /* sky-400 @ 38% */
-  --sun-br:  rgba(2,132,199,0.55);   /* sky-600 @ 55% */
-  --poop-bg: rgba(239,68,68,0.38);   /* red-500 @ 38% */
-  --poop-br: rgba(185,28,28,0.55);   /* red-700 @ 55% */
+  /* Past colors */
+  --sun-bg:  rgba(56,189,248,0.38);  /* blue */
+  --sun-br:  rgba(2,132,199,0.55);
+  --poop-bg: rgba(239,68,68,0.38);   /* red  */
+  --poop-br: rgba(185,28,28,0.55);
 }
 
-/* ====== Base ====== */
+/* ===== Base ===== */
 *,*::before,*::after{box-sizing:border-box}
 html,body{height:100%}
 body{
@@ -44,7 +44,6 @@ body{
 a{color:inherit;text-decoration:none}
 img{max-width:100%;display:block}
 
-/* ====== UI chrome ====== */
 .emblem{
   position:fixed; top:16px; left:16px; width:64px; opacity:.15; filter:grayscale(100%); pointer-events:none;
 }
@@ -55,7 +54,7 @@ img{max-width:100%;display:block}
 }
 .user-btn svg{width:22px;height:22px;color:#e5e7eb}
 
-/* ====== Layout ====== */
+/* ===== Layout ===== */
 .wrap{
   max-width:1100px; margin:auto; padding:20px; min-height:100%;
   display:flex; flex-direction:column; gap:16px; align-items:stretch; justify-content:flex-start;
@@ -72,13 +71,13 @@ img{max-width:100%;display:block}
   padding:16px;
 }
 
-/* ====== Controls ====== */
+/* ===== Controls ===== */
 .topbar{display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px}
 .controls{display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap}
 .field{display:flex; flex-direction:column; gap:6px}
 .label{font-size:12px; color:var(--muted)}
-.input{
-  width:90px; background:#0a1221; color:var(--text);
+.input, select{
+  width:120px; background:#0a1221; color:var(--text);
   border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:10px 12px;
 }
 .input::-webkit-outer-spin-button,.input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0 }
@@ -87,7 +86,9 @@ img{max-width:100%;display:block}
   border:none; border-radius:10px; padding:10px 14px; font-weight:800;
 }
 
-/* ====== Facts ====== */
+.legend{display:flex; gap:12px; align-items:center; color:var(--muted); font-size:13px}
+
+/* ===== Facts ===== */
 .facts{
   display:grid; gap:10px; grid-template-columns:repeat(3,1fr); margin-bottom:12px;
 }
@@ -99,7 +100,7 @@ img{max-width:100%;display:block}
 .fact .num{ font-weight:800; font-size:22px }
 .fact .lbl{ color:var(--muted); font-size:12px; margin-top:4px }
 
-/* ====== Grid ====== */
+/* ===== Grid ===== */
 .grid{
   --cols:52; --gap:2px;
   display:grid; grid-template-columns:repeat(var(--cols), 1fr);
@@ -109,28 +110,25 @@ img{max-width:100%;display:block}
   aspect-ratio:1/1; background:rgba(255,255,255,.02);
   border:1px solid rgba(255,255,255,.06); border-radius:3px; position:relative; overflow:hidden;
 }
-
-/* Only PAST weeks get colored; FUTURE stays empty */
-.cell.past{ background:transparent; border-color:rgba(255,255,255,.12); }
+/* FUTURE = empty; PAST gets era color */
+.cell.past{ background:transparent; border-color:rgba(255,255,255,.12) }
 .cell.past.sun  { background:var(--sun-bg);  border-color:var(--sun-br) }
 .cell.past.poop { background:var(--poop-bg); border-color:var(--poop-br) }
-
 /* subtle sheen */
 .cell.past::before{
   content:""; position:absolute; inset:0; border-radius:3px;
   background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
-  pointer-events:none;
+  pointer-events:none; z-index:0;
 }
-
-/* Emojis ON (mobile + desktop), size follows cell px size */
-.cell.past.sun::after,
-.cell.past.poop::after{
-  position:absolute; inset:0; display:grid; place-items:center;
-  line-height:1; content:"";
-  font-size: clamp(10px, calc(var(--cellpx, 12px) * 0.70), 18px);
+/* REAL emoji element (mobile-safe) */
+.cell .emoji{
+  position:relative; z-index:1;
+  display:flex; align-items:center; justify-content:center;
+  width:100%; height:100%; line-height:1;
+  font-size: clamp(12px, calc(var(--cellpx, 14px) * 0.78), 22px);
+  transform: translateY(0.4px); /* small iOS baseline nudge */
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
 }
-.cell.past.sun::after  { content:"☀️"; }
-.cell.past.poop::after { content:"💩"; }
 
 .meta{
   display:flex; justify-content:space-between; gap:10px; margin-top:10px;
@@ -150,7 +148,7 @@ img{max-width:100%;display:block}
   <div class="wrap">
     <div class="title">
       <h1>هفته‌های به‌جا نرفته‌ی من</h1>
-      <div class="subtitle">سه ورودی بالا (سال/ماه/روز) را پر کن و «محاسبه» را بزن. فقط هفته‌های گذشته پر می‌شوند.</div>
+      <div class="subtitle">میانگین عمر ایرانی‌ها: <b>۷۷٫۷</b> سال (قابل تغییر). پیش از مرز ۱۲ بهمن ۱۳۵۷ با ☀️، پس از آن با 💩.</div>
     </div>
 
     <div class="canvas">
@@ -158,25 +156,38 @@ img{max-width:100%;display:block}
         <div class="controls">
           <div class="field">
             <label class="label" for="jy">سال (جلالی)</label>
-            <input id="jy" class="input" type="number" inputmode="numeric" placeholder="1370" min="1200" max="1500">
+            <input id="jy" class="input" type="number" inputmode="numeric" placeholder="1369" min="1200" max="1500">
           </div>
           <div class="field">
             <label class="label" for="jm">ماه</label>
-            <input id="jm" class="input" type="number" inputmode="numeric" placeholder="05" min="1" max="12">
+            <select id="jm">
+              <option value="1">فروردین</option>
+              <option value="2">اردیبهشت</option>
+              <option value="3">خرداد</option>
+              <option value="4">تیر</option>
+              <option value="5">مرداد</option>
+              <option value="6">شهریور</option>
+              <option value="7">مهر</option>
+              <option value="8">آبان</option>
+              <option value="9">آذر</option>
+              <option value="10">دی</option>
+              <option value="11">بهمن</option>
+              <option value="12">اسفند</option>
+            </select>
           </div>
           <div class="field">
             <label class="label" for="jd">روز</label>
-            <input id="jd" class="input" type="number" inputmode="numeric" placeholder="04" min="1" max="31">
+            <input id="jd" class="input" type="number" inputmode="numeric" placeholder="3" min="1" max="31">
           </div>
           <div class="field">
-            <label class="label" for="expect">امید به زندگی (سال)</label>
-            <input id="expect" class="input" type="number" value="78" min="40" max="120" step="1">
+            <label class="label" for="expect">میانگین (سال)</label>
+            <input id="expect" class="input" type="number" value="77.7" step="0.1" min="40" max="120">
           </div>
           <button class="btn" id="calcBtn">محاسبه</button>
         </div>
         <div class="legend">
-          <span>☀️ قبل از ۱۲ بهمن ۱۳۵۷</span>
-          <span>💩 بعد از آن</span>
+          <span>☀️ پیش از مرز</span>
+          <span>💩 پس از مرز</span>
         </div>
       </div>
 
@@ -226,7 +237,7 @@ function todayUTC(){ const t=new Date(); return new Date(Date.UTC(t.getUTCFullYe
 function addWeeksUTC(date, w){ return new Date(date.getTime() + w*7*24*60*60*1000); }
 function weeksBetweenUTC(a,b){ return Math.floor((b - a) / (7*24*60*60*1000)); }
 
-/* Boundary: ۱۲ بهمن ۱۳۵۷ (before = ☀️, after = 💩) */
+/* Boundary: ۱۲ بهمن ۱۳۵۷ */
 const REVOLUTION = jDateUTC(1357,11,12);
 
 /* DOM */
@@ -243,10 +254,10 @@ function build(){
   const jy = +document.getElementById('jy').value;
   const jm = +document.getElementById('jm').value;
   const jd = +document.getElementById('jd').value;
-  const exp = Math.max(40, Math.min(120, +document.getElementById('expect').value || 78));
+  const exp = Math.max(40, Math.min(120, +document.getElementById('expect').value || 77.7));
 
   if(!jy || !jm || !jd || jm<1 || jm>12 || jd<1 || jd>31){
-    alert('سال/ماه/روز جلالی را درست وارد کن (مثلاً 1370 / 05 / 04).');
+    alert('سال/ماه/روز جلالی را درست وارد کن (مثلاً 1369 / خرداد / 3).');
     return;
   }
 
@@ -255,7 +266,7 @@ function build(){
 
   const ageWeeks = Math.max(0, weeksBetweenUTC(dob, today));
   const ageYears = ageWeeks / 52;
-  const displayYears = Math.max(exp, Math.ceil(ageYears + 5));
+  const displayYears = Math.max(Math.ceil(exp), Math.ceil(ageYears + 5));
   const totalWeeks = displayYears * 52;
 
   // counts for facts (only among past weeks)
@@ -278,45 +289,51 @@ function build(){
     const d = addWeeksUTC(dob, w);
     const isPast = d <= today;
     const isSun  = d < REVOLUTION;
+
     const cell = document.createElement('div');
     cell.className = 'cell' + (isPast ? ' past' : '') + (isSun ? ' sun' : ' poop');
+
+    if (isPast) {
+      const em = document.createElement('span');
+      em.className = 'emoji';
+      em.textContent = isSun ? '☀️' : '💩';
+      cell.appendChild(em);
+    }
+
     gridEl.appendChild(cell);
   }
 
-  // bottom stats (optional)
-  statsLeft.textContent  = `هفته‌های گذشته: ${ageWeeks.toLocaleString('fa-IR')}`;
-  statsRight.textContent = `هفته‌های باقی‌مانده تا ${displayYears} سال: ${leftWeeks.toLocaleString('fa-IR')}`;
+  // extra stats (optional)
+  statsLeft.textContent  = `سن: ${ageYears.toFixed(1)} سال`;
+  statsRight.textContent = `میانگین مبنا: ${Math.ceil(exp)} سال • باقی‌مانده: ${leftWeeks.toLocaleString('fa-IR')} هفته`;
 
   // remember inputs
   localStorage.setItem('wofl-jy', String(jy));
-  localStorage.setItem('wofl-jm', String(jm).padStart(2,'0'));
-  localStorage.setItem('wofl-jd', String(jd).padStart(2,'0'));
+  localStorage.setItem('wofl-jm', String(jm));
+  localStorage.setItem('wofl-jd', String(jd));
 
-  // scale emojis to cell size
+  // size emojis to cell
   updateEmojiScale();
 }
 
-/* Scale emojis to cell pixel size (mobile-friendly) */
+/* Emoji scale follows cell size (works on phones) */
 function updateEmojiScale(){
-  const firstCell = gridEl.querySelector('.cell');
-  if(!firstCell) return;
-  const r = firstCell.getBoundingClientRect();
-  const size = Math.min(r.width, r.height);
-  gridEl.style.setProperty('--cellpx', size + 'px');
+  const first = gridEl.querySelector('.cell');
+  if(!first) return;
+  const r = first.getBoundingClientRect();
+  gridEl.style.setProperty('--cellpx', Math.min(r.width, r.height) + 'px');
 }
-
-/* keep emoji size on rotate/resize */
-let _resTO;
+let _resizeTO;
 window.addEventListener('resize', () => {
-  clearTimeout(_resTO);
-  _resTO = setTimeout(updateEmojiScale, 100);
+  clearTimeout(_resizeTO);
+  _resizeTO = setTimeout(updateEmojiScale, 120);
 });
 
 /* restore inputs */
 (function(){
   const jyI=document.getElementById('jy'), jmI=document.getElementById('jm'), jdI=document.getElementById('jd');
   jyI.value = localStorage.getItem('wofl-jy') || '';
-  jmI.value = localStorage.getItem('wofl-jm') || '';
+  jmI.value = localStorage.getItem('wofl-jm') || '3';  // پیش‌فرض: خرداد
   jdI.value = localStorage.getItem('wofl-jd') || '';
 })();
 
