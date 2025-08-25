@@ -5,123 +5,173 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>هفته‌های به‌جا نرفته‌ی من</title>
 
-<!-- Optional: keep your site-wide styles; our rules below are scoped -->
-<link rel="stylesheet" href="/css/theme.css">
-<link rel="stylesheet" href="/css/components.css">
-
 <style>
-/* ---------- Page fonts (self-hosted) ---------- */
+/* ===== Self-hosted Vazirmatn ===== */
 @font-face{
   font-family:"Vazirmatn";
   src:url("/assets/Vazirmatn/Vazirmatn-Variable.woff2") format("woff2-variations");
   font-weight:100 900; font-style:normal; font-display:swap;
 }
 
-/* ---------- Scope everything to #wofl to avoid leaks ---------- */
-#wofl{ --bg1:#0f172a; --bg2:#1e293b; --text:#e5e7eb; --muted:#93a5b1;
-       --accent1:#22d3ee; --accent2:#38bdf8;
-       --card-bg1:rgba(255,255,255,.04); --card-bg2:rgba(255,255,255,.02);
-       --card-br:16px; --shadow:0 24px 60px rgba(0,0,0,.35);
-       --sun-bg:rgba(56,189,248,.38); --sun-br:rgba(2,132,199,.55);
-       --poop-bg:rgba(239,68,68,.38); --poop-br:rgba(185,28,28,.55);
-       font-family:Vazirmatn,system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Arabic",Tahoma,sans-serif;
-       color:var(--text);
-}
-#wofl a{color:inherit;text-decoration:none}
-#wofl img{max-width:100%;display:block}
+/* ===== Tokens ===== */
+:root{
+  --bg1:#0f172a; --bg2:#1e293b;
+  --text:#e5e7eb; --muted:#93a5b1;
+  --accent1:#22d3ee; --accent2:#38bdf8;
 
-/* background + chrome */
-body{ background:
-  radial-gradient(1200px 800px at 80% -20%, #1f2937 0%, #0f172a 60%),
-  linear-gradient(180deg, #0f172a, #1e293b);
-  margin:0;
+  --card-bg1: rgba(255,255,255,0.04);
+  --card-bg2: rgba(255,255,255,0.02);
+  --card-br: 16px;
+  --shadow: 0 24px 60px rgba(0,0,0,.35);
+
+  /* Past colors */
+  --sun-bg:  rgba(56,189,248,0.38);  /* blue */
+  --sun-br:  rgba(2,132,199,0.55);
+  --poop-bg: rgba(239,68,68,0.38);   /* red  */
+  --poop-br: rgba(185,28,28,0.55);
 }
-#wofl .emblem{ position:fixed; top:16px; left:16px; width:64px; opacity:.15; filter:grayscale(100%); pointer-events:none }
-#wofl .user-btn{ position:fixed; top:14px; right:14px; width:42px; height:42px; display:grid; place-items:center;
+
+/* ===== Base ===== */
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; font-family:Vazirmatn,system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Arabic",Tahoma,sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(1200px 800px at 80% -20%, #1f2937 0%, var(--bg1) 60%),
+    linear-gradient(180deg, var(--bg1), var(--bg2));
+}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+
+/* ===== UI chrome ===== */
+.emblem{
+  position:fixed; top:16px; left:16px; width:64px; opacity:.15; filter:grayscale(100%); pointer-events:none;
+}
+.user-btn{
+  position:fixed; top:14px; right:14px; width:42px; height:42px; display:grid; place-items:center;
   border-radius:12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
-  backdrop-filter:blur(6px); box-shadow:0 10px 30px rgba(0,0,0,.25) }
-#wofl .user-btn svg{ width:22px; height:22px; color:#e5e7eb }
+  backdrop-filter:blur(6px); box-shadow:0 10px 30px rgba(0,0,0,.25);
+}
+.user-btn svg{width:22px;height:22px;color:#e5e7eb}
 
-/* layout */
-#wofl .wrap{ max-width:1100px; margin:auto; padding:20px; min-height:100%;
-  display:flex; flex-direction:column; gap:16px; align-items:stretch; justify-content:flex-start }
-#wofl .title{ text-align:right; margin-top:18px }
-#wofl .title h1{ margin:0; font-weight:800; font-size:clamp(22px,4.6vw,34px) }
-#wofl .title .subtitle{ color:var(--muted); font-size:14px; margin-top:6px }
+/* ===== Layout ===== */
+.wrap{
+  max-width:1100px; margin:auto; padding:20px; min-height:100%;
+  display:flex; flex-direction:column; gap:16px; align-items:stretch; justify-content:flex-start;
+}
+.title{ text-align:right; margin-top:18px; }
+.title h1{ margin:0; font-weight:800; font-size:clamp(22px,4.6vw,34px) }
+.title .subtitle{ color:var(--muted); font-size:14px; margin-top:6px }
 
-#wofl .canvas{ background:linear-gradient(180deg,var(--card-bg1),var(--card-bg2));
-  border:1px solid rgba(255,255,255,.08); border-radius:var(--card-br);
-  box-shadow:var(--shadow); padding:16px }
+.canvas{
+  background:linear-gradient(180deg, var(--card-bg1), var(--card-bg2));
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:var(--card-br);
+  box-shadow:var(--shadow);
+  padding:16px;
+}
 
-/* controls */
-#wofl .topbar{ display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px }
-#wofl .controls{ display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap }
-#wofl .field{ display:flex; flex-direction:column; gap:6px }
-#wofl .label{ font-size:12px; color:var(--muted) }
-#wofl .input, #wofl select{ width:120px; background:#0a1221; color:var(--text);
-  border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:10px 12px }
-#wofl .input::-webkit-outer-spin-button,#wofl .input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0 }
-#wofl .btn{ background:linear-gradient(90deg,var(--accent1),var(--accent2)); color:#00111a;
-  border:none; border-radius:10px; padding:10px 14px; font-weight:800 }
-#wofl .legend{ display:flex; gap:12px; align-items:center; color:var(--muted); font-size:13px }
+/* ===== Controls ===== */
+.topbar{display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px}
+.controls{display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap}
+.field{display:flex; flex-direction:column; gap:6px}
+.label{font-size:12px; color:var(--muted)}
+.input, select{
+  width:120px; background:#0a1221; color:var(--text);
+  border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:10px 12px;
+}
+.input::-webkit-outer-spin-button,.input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0 }
+.btn{
+  background:linear-gradient(90deg, var(--accent1), var(--accent2)); color:#00111a;
+  border:none; border-radius:10px; padding:10px 14px; font-weight:800;
+}
 
-/* fact rectangles */
-#wofl .facts{ display:grid; gap:10px; grid-template-columns:repeat(3,1fr); margin-bottom:12px }
-@media (max-width:900px){ #wofl .facts{ grid-template-columns:1fr } }
-#wofl .fact{ background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
-  border-radius:12px; padding:12px }
-#wofl .fact .num{ font-weight:800; font-size:22px }
-#wofl .fact .lbl{ color:var(--muted); font-size:12px; margin-top:4px }
+.legend{display:flex; gap:12px; align-items:center; color:var(--muted); font-size:13px}
 
-/* grid */
-#wofl .grid{ --cols:52; --gap:2px; display:grid; grid-template-columns:repeat(var(--cols),1fr);
-  gap:var(--gap); background:rgba(255,255,255,.06); padding:var(--gap); border-radius:10px }
-#wofl .cell{ aspect-ratio:1/1; background:rgba(255,255,255,.02);
-  border:1px solid rgba(255,255,255,.06); border-radius:3px; position:relative; overflow:hidden }
+/* ===== Facts ===== */
+.facts{
+  display:grid; gap:10px; grid-template-columns:repeat(3,1fr); margin-bottom:12px;
+}
+@media (max-width:900px){ .facts{ grid-template-columns:1fr } }
+.fact{
+  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+  border-radius:12px; padding:12px;
+}
+.fact .num{ font-weight:800; font-size:22px }
+.fact .lbl{ color:var(--muted); font-size:12px; margin-top:4px }
 
-/* neutralize ANY global dot styles from theme/components */
-#wofl .cell{ background-image:none !important; box-shadow:none !important; mix-blend-mode:normal !important; filter:none !important }
-#wofl .cell::after{ content:none !important }
+/* ===== Grid ===== */
+#grid{
+  --cols:52; --gap:2px;
+  display:grid; grid-template-columns:repeat(var(--cols), 1fr);
+  gap:var(--gap); background:rgba(255,255,255,.06); padding:var(--gap); border-radius:10px;
+}
 
-/* past weeks get colored by era; future stays empty */
-#wofl .cell.past{ background:transparent; border-color:rgba(255,255,255,.12) }
-#wofl .cell.past.sun  { background:var(--sun-bg);  border-color:var(--sun-br) }
-#wofl .cell.past.poop { background:var(--poop-bg); border-color:var(--poop-br) }
+/* Each cell: nuke ANY external masks/rings and make a clean stacking context */
+#grid .cell{
+  aspect-ratio:1/1;
+  background:rgba(255,255,255,.02) !important;
+  border:1px solid rgba(255,255,255,.06) !important;
+  border-radius:4px !important;
+  position:relative !important;
+  overflow:hidden !important;
+  isolation:isolate !important;
+  /* kill theme leaks */
+  background-image:none !important;
+  box-shadow:none !important;
+  outline:none !important;
+  -webkit-mask:none !important; -webkit-mask-image:none !important;
+  mask:none !important; mask-image:none !important;
+  clip-path:none !important;
+}
+#grid .cell::before, #grid .cell::after{ content:none !important; }
+
+/* FUTURE = empty; PAST gets era color */
+#grid .cell.past{ background:transparent !important; border-color:rgba(255,255,255,.12) !important; }
+#grid .cell.past.sun  { background-color:var(--sun-bg) !important;  border-color:var(--sun-br) !important; }
+#grid .cell.past.poop { background-color:var(--poop-bg) !important;  border-color:var(--poop-br) !important; }
 
 /* soft sheen under emoji */
-#wofl .cell.past::before{ content:""; position:absolute; inset:0; border-radius:3px;
-  background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0)); pointer-events:none; z-index:0 }
+#grid .cell.past .sheen{
+  content:""; position:absolute; inset:0; border-radius:4px;
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
+  pointer-events:none; z-index:0;
+}
 
-/* REAL emoji element (sits on top, mobile-safe) */
-#wofl .cell .emoji{ position:relative; z-index:2; display:flex; align-items:center; justify-content:center;
-  width:100%; height:100%; line-height:1;
+/* REAL emoji element — sits ON TOP, never masked */
+#grid .cell .emoji{
+  position:absolute !important; inset:0 !important;
+  z-index:5 !important;
+  display:grid !important; place-items:center !important;
+  line-height:1 !important;
   font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","Twemoji Mozilla",system-ui,sans-serif !important;
-  font-size:clamp(12px, calc(var(--cellpx, 14px) * 0.78), 22px);
-  transform:translateY(0.4px); -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility }
+  font-size: clamp(14px, calc(var(--cellpx, 16px) * 0.85), 24px) !important;
+  transform: translateY(0.3px);
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  mix-blend-mode: normal !important; filter:none !important;
+}
 
-/* misc */
-#wofl .meta{ display:flex; justify-content:space-between; gap:10px; margin-top:10px; color:var(--muted); font-size:13px }
-#wofl .note{ margin-top:12px; color:#cbd5e1; font-size:13px; line-height:1.75 }
-#wofl .note strong{ color:#e5e7eb }
+/* ===== Misc ===== */
+.meta{
+  display:flex; justify-content:space-between; gap:10px; margin-top:10px;
+  color:var(--muted); font-size:13px
+}
+.note{ margin-top:12px; color:#cbd5e1; font-size:13px; line-height:1.75 }
+.note strong{ color:#e5e7eb }
 </style>
 </head>
 <body>
-
-<div id="wofl">
   <!-- watermark + user -->
   <img class="emblem" src="/assets/lion-sun.svg" alt="شیر و خورشید">
   <a class="user-btn" href="/login.html" aria-label="ورود به داشبورد">
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 12c2.761 0 5-2.462 5-5.5S14.761 1 12 1 7 3.462 7 6.5 9.239 12 12 12Zm0 2c-4.97 0-9 3.582-9 8 0 .552.448 1 1 1h16c.552 0 1-.448 1-1 0-4.418-4.03-8-9-8Z" fill="currentColor"/>
-    </svg>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 12c2.761 0 5-2.462 5-5.5S14.761 1 12 1 7 3.462 7 6.5 9.239 12 12 12Zm0 2c-4.97 0-9 3.582-9 8 0 .552.448 1 1 1h16c.552 0 1-.448 1-1 0-4.418-4.03-8-9-8Z" fill="currentColor"/></svg>
   </a>
 
   <div class="wrap">
     <div class="title">
-      <h1>هفته‌های به‌جا نرفتهٔ من</h1>
-      <div class="subtitle">
-        میانگین عمر ایرانی‌ها: <b>۷۷٫۷</b> سال (قابل تغییر). پیش از مرز <b>۱۲ بهمن ۱۳۵۷</b> با ☀️، پس از آن با 💩.
-      </div>
+      <h1>هفته‌های به‌جا نرفته‌ی من</h1>
+      <div class="subtitle">سه ورودی بالا (سال/ماه/روز) را پر کن و «محاسبه» را بزن. فقط هفته‌های گذشته پر می‌شوند.</div>
     </div>
 
     <div class="canvas">
@@ -134,7 +184,7 @@ body{ background:
           <div class="field">
             <label class="label" for="jm">ماه</label>
             <select id="jm">
-              <option value="1">فروردین</option><option value="2">اردیبهشت</option><option value="3">خرداد</option>
+              <option value="1">فروردین</option><option value="2">اردیبهشت</option><option value="3" selected>خرداد</option>
               <option value="4">تیر</option><option value="5">مرداد</option><option value="6">شهریور</option>
               <option value="7">مهر</option><option value="8">آبان</option><option value="9">آذر</option>
               <option value="10">دی</option><option value="11">بهمن</option><option value="12">اسفند</option>
@@ -179,7 +229,6 @@ body{ background:
       </div>
     </div>
   </div>
-</div>
 
 <script>
 /* ===== Jalali → Gregorian (UTC-safe) ===== */
@@ -203,10 +252,10 @@ function todayUTC(){ const t=new Date(); return new Date(Date.UTC(t.getUTCFullYe
 function addWeeksUTC(date, w){ return new Date(date.getTime() + w*7*24*60*60*1000); }
 function weeksBetweenUTC(a,b){ return Math.floor((b - a) / (7*24*60*60*1000)); }
 
-/* Boundary: ۱۲ بهمن ۱۳۵۷ */
+/* Boundary: ۱۲ بهمن ۱۳۵۷ (before = ☀️, after = 💩) */
 const REVOLUTION = jDateUTC(1357,11,12);
 
-/* DOM refs (scoped) */
+/* DOM */
 const gridEl   = document.getElementById('grid');
 const fLived   = document.getElementById('f-lived');
 const fSunPoop = document.getElementById('f-sunpoop');
@@ -260,6 +309,11 @@ function build(){
     cell.className = 'cell' + (isPast ? ' past' : '') + (isSun ? ' sun' : ' poop');
 
     if (isPast) {
+      // sheen under emoji
+      const sh = document.createElement('i');
+      sh.className = 'sheen'; cell.appendChild(sh);
+
+      // real emoji on top
       const em = document.createElement('span');
       em.className = 'emoji';
       em.textContent = isSun ? '☀️' : '💩';
@@ -299,7 +353,7 @@ window.addEventListener('resize', () => {
 (function(){
   const jyI=document.getElementById('jy'), jmI=document.getElementById('jm'), jdI=document.getElementById('jd');
   jyI.value = localStorage.getItem('wofl-jy') || '';
-  jmI.value = localStorage.getItem('wofl-jm') || '3';  // پیش‌فرض: خرداد
+  jmI.value = localStorage.getItem('wofl-jm') || '3';
   jdI.value = localStorage.getItem('wofl-jd') || '';
 })();
 
