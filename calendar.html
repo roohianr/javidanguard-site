@@ -2,38 +2,28 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>هفته‌های به‌جا نرفته‌ی من</title>
 
 <style>
-/* ===== Self-hosted Vazirmatn ===== */
 @font-face{
   font-family:"Vazirmatn";
   src:url("/assets/Vazirmatn/Vazirmatn-Variable.woff2") format("woff2-variations");
   font-weight:100 900; font-style:normal; font-display:swap;
 }
 
-/* ===== Tokens ===== */
+/* ===== tokens ===== */
 :root{
-  --bg1:#0f172a; --bg2:#1e293b;
-  --text:#e5e7eb; --muted:#93a5b1;
+  --bg1:#0f172a; --bg2:#1e293b; --text:#e5e7eb; --muted:#93a5b1;
   --accent1:#22d3ee; --accent2:#38bdf8;
-
-  --card-bg1: rgba(255,255,255,0.04);
-  --card-bg2: rgba(255,255,255,0.02);
-  --card-br: 16px;
-  --shadow: 0 24px 60px rgba(0,0,0,.35);
-
-  /* Past colors */
-  --sun-bg:  rgba(56,189,248,0.38);  /* blue */
-  --sun-br:  rgba(2,132,199,0.55);
-  --poop-bg: rgba(239,68,68,0.38);   /* red  */
-  --poop-br: rgba(185,28,28,0.55);
+  --card-bg1: rgba(255,255,255,.04); --card-bg2: rgba(255,255,255,.02);
+  --card-br:16px; --shadow:0 24px 60px rgba(0,0,0,.35);
+  --sun-bg: rgba(56,189,248,.38);  --sun-br: rgba(2,132,199,.55);  /* BLUE */
+  --poo-bg: rgba(239,68,68,.38);   --poo-br: rgba(185,28,28,.55); /* RED  */
 }
 
-/* ===== Base ===== */
-*,*::before,*::after{box-sizing:border-box}
-html,body{height:100%}
+*,*::before,*::after{ box-sizing:border-box }
+html,body{ height:100% }
 body{
   margin:0; font-family:Vazirmatn,system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Arabic",Tahoma,sans-serif;
   color:var(--text);
@@ -41,42 +31,33 @@ body{
     radial-gradient(1200px 800px at 80% -20%, #1f2937 0%, var(--bg1) 60%),
     linear-gradient(180deg, var(--bg1), var(--bg2));
 }
-a{color:inherit;text-decoration:none}
-img{max-width:100%;display:block}
+img{ max-width:100%; display:block }
+a{ color:inherit; text-decoration:none }
 
-/* ===== UI chrome ===== */
-.emblem{
-  position:fixed; top:16px; left:16px; width:64px; opacity:.15; filter:grayscale(100%); pointer-events:none;
-}
+.emblem{ position:fixed; top:16px; left:16px; width:64px; opacity:.15; filter:grayscale(100%); pointer-events:none }
 .user-btn{
   position:fixed; top:14px; right:14px; width:42px; height:42px; display:grid; place-items:center;
   border-radius:12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
-  backdrop-filter:blur(6px); box-shadow:0 10px 30px rgba(0,0,0,.25);
+  backdrop-filter:blur(6px); box-shadow:0 10px 30px rgba(0,0,0,.25)
 }
-.user-btn svg{width:22px;height:22px;color:#e5e7eb}
+.user-btn svg{ width:22px; height:22px; color:#e5e7eb }
 
-/* ===== Layout ===== */
-.wrap{
-  max-width:1100px; margin:auto; padding:20px; min-height:100%;
-  display:flex; flex-direction:column; gap:16px; align-items:stretch; justify-content:flex-start;
-}
-.title{ text-align:right; margin-top:18px; }
+.wrap{ max-width:1100px; margin:auto; padding:20px; min-height:100%;
+  display:flex; flex-direction:column; gap:16px }
+.title{ text-align:right; margin-top:18px }
 .title h1{ margin:0; font-weight:800; font-size:clamp(22px,4.6vw,34px) }
 .title .subtitle{ color:var(--muted); font-size:14px; margin-top:6px }
 
 .canvas{
   background:linear-gradient(180deg, var(--card-bg1), var(--card-bg2));
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:var(--card-br);
-  box-shadow:var(--shadow);
-  padding:16px;
+  border:1px solid rgba(255,255,255,.08); border-radius:var(--card-br);
+  box-shadow:var(--shadow); padding:16px;
 }
 
-/* ===== Controls ===== */
-.topbar{display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px}
-.controls{display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap}
-.field{display:flex; flex-direction:column; gap:6px}
-.label{font-size:12px; color:var(--muted)}
+.topbar{ display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px }
+.controls{ display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap }
+.field{ display:flex; flex-direction:column; gap:6px }
+.label{ font-size:12px; color:var(--muted) }
 .input, select{
   width:120px; background:#0a1221; color:var(--text);
   border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:10px 12px;
@@ -87,82 +68,78 @@ img{max-width:100%;display:block}
   border:none; border-radius:10px; padding:10px 14px; font-weight:800;
 }
 
-.legend{display:flex; gap:12px; align-items:center; color:var(--muted); font-size:13px}
+.legend{ display:flex; gap:12px; align-items:center; color:var(--muted); font-size:13px }
 
-/* ===== Facts ===== */
-.facts{
-  display:grid; gap:10px; grid-template-columns:repeat(3,1fr); margin-bottom:12px;
-}
+/* facts */
+.facts{ display:grid; gap:10px; grid-template-columns:repeat(3,1fr); margin-bottom:12px }
 @media (max-width:900px){ .facts{ grid-template-columns:1fr } }
-.fact{
-  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
-  border-radius:12px; padding:12px;
-}
+.fact{ background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+  border-radius:12px; padding:12px }
 .fact .num{ font-weight:800; font-size:22px }
 .fact .lbl{ color:var(--muted); font-size:12px; margin-top:4px }
 
-/* ===== Grid ===== */
-#grid{
-  --cols:52; --gap:2px;
-  display:grid; grid-template-columns:repeat(var(--cols), 1fr);
-  gap:var(--gap); background:rgba(255,255,255,.06); padding:var(--gap); border-radius:10px;
+/* ===== responsive grid (min cell size + horizontal scroll on phones) ===== */
+.gridWrap{ overflow-x:auto; -webkit-overflow-scrolling:touch }
+.grid{
+  --gap:2px;
+  --cell: clamp(14px, calc((100vw - 48px - (51 * var(--gap))) / 52), 18px); /* min 14px on small screens */
+  display:grid;
+  grid-template-columns: repeat(52, var(--cell));
+  gap: var(--gap);
+  background:rgba(255,255,255,.06);
+  padding:var(--gap); border-radius:10px;
+  width: calc(52 * var(--cell) + 51 * var(--gap)); /* makes it scroll when needed */
+  margin-inline:auto; /* center on wide screens */
 }
 
-/* Each cell: nuke ANY external masks/rings and make a clean stacking context */
-#grid .cell{
-  aspect-ratio:1/1;
-  background:rgba(255,255,255,.02) !important;
-  border:1px solid rgba(255,255,255,.06) !important;
-  border-radius:4px !important;
-  position:relative !important;
-  overflow:hidden !important;
-  isolation:isolate !important;
+/* cells: nuke external masks/rings; make own stacking context */
+.cell{
+  height: var(--cell);
+  background: rgba(255,255,255,.02) !important;
+  border: 1px solid rgba(255,255,255,.06) !important;
+  border-radius: 4px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
   /* kill theme leaks */
-  background-image:none !important;
-  box-shadow:none !important;
-  outline:none !important;
+  background-image:none !important; box-shadow:none !important; outline:none !important;
   -webkit-mask:none !important; -webkit-mask-image:none !important;
-  mask:none !important; mask-image:none !important;
-  clip-path:none !important;
+  mask:none !important; mask-image:none !important; clip-path:none !important;
 }
-#grid .cell::before, #grid .cell::after{ content:none !important; }
+.cell::before, .cell::after{ content:none !important }
 
-/* FUTURE = empty; PAST gets era color */
-#grid .cell.past{ background:transparent !important; border-color:rgba(255,255,255,.12) !important; }
-#grid .cell.past.sun  { background-color:var(--sun-bg) !important;  border-color:var(--sun-br) !important; }
-#grid .cell.past.poop { background-color:var(--poop-bg) !important;  border-color:var(--poop-br) !important; }
+/* FUTURE empty; PAST tinted by era */
+.cell.past{ background:transparent !important; border-color:rgba(255,255,255,.12) !important }
+.cell.past.sun  { background-color: var(--sun-bg) !important; border-color: var(--sun-br) !important }
+.cell.past.poop { background-color: var(--poo-bg) !important; border-color: var(--poo-br) !important }
 
-/* soft sheen under emoji */
-#grid .cell.past .sheen{
-  content:""; position:absolute; inset:0; border-radius:4px;
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
-  pointer-events:none; z-index:0;
+/* subtle sheen (under emoji) */
+.cell.past .sheen{
+  position:absolute; inset:0; border-radius:4px; z-index:0;
+  background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
+  pointer-events:none;
 }
 
-/* REAL emoji element — sits ON TOP, never masked */
-#grid .cell .emoji{
-  position:absolute !important; inset:0 !important;
-  z-index:5 !important;
-  display:grid !important; place-items:center !important;
-  line-height:1 !important;
+/* REAL emoji — absolute pixel-center (fixes desktop off-centering) */
+.cell .emoji{
+  position:absolute; top:50%; left:50%;
+  transform: translate(-50%, -50%);
+  z-index:5; line-height:1;
+  display:block; width:1em; height:1em; /* logical, makes centering stable */
   font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","Twemoji Mozilla",system-ui,sans-serif !important;
-  font-size: clamp(14px, calc(var(--cellpx, 16px) * 0.85), 24px) !important;
-  transform: translateY(0.3px);
+  font-size: calc(var(--cellpx, 16px) * 0.85); /* scale to cell; readable on phones */
   -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
   mix-blend-mode: normal !important; filter:none !important;
+  pointer-events:none;
 }
 
-/* ===== Misc ===== */
-.meta{
-  display:flex; justify-content:space-between; gap:10px; margin-top:10px;
-  color:var(--muted); font-size:13px
-}
+/* misc */
+.meta{ display:flex; justify-content:space-between; gap:10px; margin-top:10px; color:var(--muted); font-size:13px }
 .note{ margin-top:12px; color:#cbd5e1; font-size:13px; line-height:1.75 }
 .note strong{ color:#e5e7eb }
 </style>
 </head>
 <body>
-  <!-- watermark + user -->
   <img class="emblem" src="/assets/lion-sun.svg" alt="شیر و خورشید">
   <a class="user-btn" href="/login.html" aria-label="ورود به داشبورد">
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 12c2.761 0 5-2.462 5-5.5S14.761 1 12 1 7 3.462 7 6.5 9.239 12 12 12Zm0 2c-4.97 0-9 3.582-9 8 0 .552.448 1 1 1h16c.552 0 1-.448 1-1 0-4.418-4.03-8-9-8Z" fill="currentColor"/></svg>
@@ -171,7 +148,7 @@ img{max-width:100%;display:block}
   <div class="wrap">
     <div class="title">
       <h1>هفته‌های به‌جا نرفته‌ی من</h1>
-      <div class="subtitle">سه ورودی بالا (سال/ماه/روز) را پر کن و «محاسبه» را بزن. فقط هفته‌های گذشته پر می‌شوند.</div>
+      <div class="subtitle">پیش از مرز <b>۱۲ بهمن ۱۳۵۷</b> با ☀️ (آبی)، پس از آن با 💩 (قرمز). فقط هفته‌های گذشته پر می‌شوند.</div>
     </div>
 
     <div class="canvas">
@@ -200,21 +177,19 @@ img{max-width:100%;display:block}
           </div>
           <button class="btn" id="calcBtn">محاسبه</button>
         </div>
-        <div class="legend">
-          <span>☀️ پیش از مرز</span>
-          <span>💩 پس از مرز</span>
-        </div>
+        <div class="legend"><span>☀️ پیش از مرز</span><span>💩 پس از مرز</span></div>
       </div>
 
-      <!-- facts -->
       <div class="facts">
         <div class="fact"><div class="num" id="f-lived">—</div><div class="lbl">هفته زندگی کرده‌ای</div></div>
         <div class="fact"><div class="num" id="f-sunpoop">—</div><div class="lbl">از این تعداد: ☀️ قبل از ۱۲ بهمن / 💩 بعد از آن</div></div>
         <div class="fact"><div class="num" id="f-left">—</div><div class="lbl">هفته تا افق نمایش</div></div>
       </div>
 
-      <!-- grid -->
-      <div id="grid" class="grid" aria-label="گرید هفته‌ها"></div>
+      <!-- grid with mobile scroll -->
+      <div class="gridWrap">
+        <div id="grid" class="grid" aria-label="گرید هفته‌ها"></div>
+      </div>
 
       <div class="meta">
         <div id="statsLeft"></div>
@@ -231,7 +206,7 @@ img{max-width:100%;display:block}
   </div>
 
 <script>
-/* ===== Jalali → Gregorian (UTC-safe) ===== */
+/* Jalali → Gregorian (UTC) */
 function j2g(jy, jm, jd){
   var jy2 = jy - 979, jm2 = jm - 1, jd2 = jd - 1;
   var j_day_no = 365*jy2 + Math.floor(jy2/33)*8 + Math.floor((jy2%33 + 3)/4);
@@ -249,10 +224,10 @@ function j2g(jy, jm, jd){
 }
 function jDateUTC(jy,jm,jd){ const [gy,gm,gd] = j2g(jy,jm,jd); return new Date(Date.UTC(gy, gm-1, gd)); }
 function todayUTC(){ const t=new Date(); return new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate())); }
-function addWeeksUTC(date, w){ return new Date(date.getTime() + w*7*24*60*60*1000); }
+function addWeeksUTC(d, w){ return new Date(d.getTime() + w*7*24*60*60*1000); }
 function weeksBetweenUTC(a,b){ return Math.floor((b - a) / (7*24*60*60*1000)); }
 
-/* Boundary: ۱۲ بهمن ۱۳۵۷ (before = ☀️, after = 💩) */
+/* boundary: 12 Bahman 1357 */
 const REVOLUTION = jDateUTC(1357,11,12);
 
 /* DOM */
@@ -264,27 +239,23 @@ const statsLeft  = document.getElementById('statsLeft');
 const statsRight = document.getElementById('statsRight');
 const calcBtn    = document.getElementById('calcBtn');
 
-/* Build grid + facts */
+/* build */
 function build(){
   const jy = +document.getElementById('jy').value;
   const jm = +document.getElementById('jm').value;
   const jd = +document.getElementById('jd').value;
   const exp = Math.max(40, Math.min(120, +document.getElementById('expect').value || 77.7));
-
   if(!jy || !jm || !jd || jm<1 || jm>12 || jd<1 || jd>31){
-    alert('سال/ماه/روز جلالی را درست وارد کن (مثلاً 1369 / خرداد / 3).');
-    return;
+    alert('سال/ماه/روز جلالی را درست وارد کن.'); return;
   }
 
-  const dob = jDateUTC(jy,jm,jd);
-  const today = todayUTC();
-
+  const dob = jDateUTC(jy,jm,jd), today = todayUTC();
   const ageWeeks = Math.max(0, weeksBetweenUTC(dob, today));
   const ageYears = ageWeeks / 52;
   const displayYears = Math.max(Math.ceil(exp), Math.ceil(ageYears + 5));
   const totalWeeks = displayYears * 52;
 
-  // counts for facts (only among past weeks)
+  // counts
   let sunWeeks = 0;
   if (dob < REVOLUTION) {
     const sunEnd = (today < REVOLUTION) ? today : REVOLUTION;
@@ -309,56 +280,45 @@ function build(){
     cell.className = 'cell' + (isPast ? ' past' : '') + (isSun ? ' sun' : ' poop');
 
     if (isPast) {
-      // sheen under emoji
-      const sh = document.createElement('i');
-      sh.className = 'sheen'; cell.appendChild(sh);
-
-      // real emoji on top
-      const em = document.createElement('span');
-      em.className = 'emoji';
-      em.textContent = isSun ? '☀️' : '💩';
+      const sheen = document.createElement('i'); sheen.className='sheen'; cell.appendChild(sheen);
+      const em = document.createElement('span'); em.className='emoji'; em.textContent = isSun ? '🌞' : '💩';
       cell.appendChild(em);
     }
-
     gridEl.appendChild(cell);
   }
 
-  // extra stats (optional)
   statsLeft.textContent  = `سن: ${ageYears.toFixed(1)} سال`;
   statsRight.textContent = `میانگین مبنا: ${Math.ceil(exp)} سال • باقی‌مانده: ${leftWeeks.toLocaleString('fa-IR')} هفته`;
 
-  // remember inputs
-  localStorage.setItem('wofl-jy', String(jy));
-  localStorage.setItem('wofl-jm', String(jm));
-  localStorage.setItem('wofl-jd', String(jd));
-
-  // size emojis to cell
   updateEmojiScale();
 }
 
-/* Emoji scale follows cell size (mobile-friendly) */
+/* size emoji to cell (works with horizontal scroll) */
 function updateEmojiScale(){
   const first = gridEl.querySelector('.cell');
   if(!first) return;
   const r = first.getBoundingClientRect();
-  gridEl.style.setProperty('--cellpx', Math.min(r.width, r.height) + 'px');
+  const px = Math.min(r.width, r.height);
+  gridEl.style.setProperty('--cellpx', px + 'px');
 }
-let _resizeTO;
-window.addEventListener('resize', () => {
-  clearTimeout(_resizeTO);
-  _resizeTO = setTimeout(updateEmojiScale, 120);
-});
+let _rTO; window.addEventListener('resize', () => { clearTimeout(_rTO); _rTO = setTimeout(updateEmojiScale, 120); });
 
-/* restore inputs */
+/* restore + bind */
 (function(){
   const jyI=document.getElementById('jy'), jmI=document.getElementById('jm'), jdI=document.getElementById('jd');
   jyI.value = localStorage.getItem('wofl-jy') || '';
   jmI.value = localStorage.getItem('wofl-jm') || '3';
   jdI.value = localStorage.getItem('wofl-jd') || '';
 })();
-
-/* bind */
-calcBtn.addEventListener('click', build);
+calcBtn.addEventListener('click', () => {
+  build();
+  const jy=document.getElementById('jy').value,
+        jm=document.getElementById('jm').value,
+        jd=document.getElementById('jd').value;
+  localStorage.setItem('wofl-jy', jy);
+  localStorage.setItem('wofl-jm', jm);
+  localStorage.setItem('wofl-jd', jd);
+});
 </script>
 </body>
 </html>
